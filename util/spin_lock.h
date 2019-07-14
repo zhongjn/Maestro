@@ -15,7 +15,6 @@ namespace Maestro {
         }
         void unlock() {
             _latch.store(false, std::memory_order_release);
-            _latch.st
         }
     };
 
