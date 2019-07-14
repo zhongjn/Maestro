@@ -1,41 +1,6 @@
 #include "gomoku.h"
 
-GAction::GAction(int x, int y, Color color)
-{
-	m_x = x;
-	m_y = y;
-	m_color = color;
-}
-
-GState::GState()
-{
-	for (int i = 0; i < NROWS; ++i)
-	{
-		for (int j = 0; j < NCOLS; ++j)
-		{
-			m_board[i][j] = Color::BLANK;
-		}
-	}
-	m_cur_played = Color::WHITE;					// black first
-	m_last_played = Color::BLACK;
-	m_result = State::NOTEND;
-}
-
-GState::GState(GState & s)
-{
-	for (int i = 0; i < NROWS; ++i)
-	{
-		for (int j = 0; j < NCOLS; ++j)
-		{
-			m_board[i][j] = s.m_board[i][j];
-		}
-	}
-	m_cur_played = s.m_cur_played;
-	m_last_played = s.m_last_played;
-	m_result = State::NOTEND;
-}
-
-GState * GState::get_next_state(const GAction& a)
+GState* GState::get_next_state(const GAction& a)
 {
 	GState* ret = nullptr;
 	if (a.m_color == Color::BLANK)
@@ -70,7 +35,7 @@ void GState::get_next_state(GState& s, const GAction& a)
 		s = GState(*this);
 		s.m_last_played = s.m_cur_played;
 		s.m_cur_played = Color::BLANK;
-		check_win();
+		s.check_win();
 	}
 	else if (m_board[a.m_x][a.m_y] == Color::BLANK)
 	{
@@ -78,7 +43,7 @@ void GState::get_next_state(GState& s, const GAction& a)
 		s.m_board[a.m_x][a.m_y] = a.m_color;
 		s.m_last_played = s.m_cur_played;
 		s.m_cur_played = a.m_color;
-		check_win();
+		s.check_win();
 	}
 	else
 	{
@@ -95,8 +60,9 @@ void GState::check_win()
 		return;
 	}
 
-	std::pair<int, int> res = judge(m_board);
-	if ((res.first == 5 && m_cur_played == Color::BLACK) || (res.second == 5 && m_cur_played == Color::WHITE))
+	int w, b;
+	judge(m_board, b, w);
+	if ((b == 5 && m_cur_played == Color::BLACK) || (w == 5 && m_cur_played == Color::WHITE))
 	{
 		m_result = State::WIN;
 	}
@@ -131,7 +97,7 @@ std::string GState::to_string()
 	return ret;
 }
 
-std::pair<int, int> judge(Color board[NROWS][NCOLS])
+void judge(Color board[NROWS][NCOLS], int& b, int& w)
 {
 	Color winner = Color::BLANK;	// for not end
 	int count = 0;
@@ -347,33 +313,6 @@ result:
 	{
 		max_white = 5;
 	}
-	return std::pair<int, int>(max_black, max_white);
-}
-
-std::map<GAction*, std::pair<double, double>> NN(GState* s)
-{
-	std::map<GAction*, std::pair<double, double>> ret;
-	GState stemp(*s);
-	GAction a = GAction(0, 0, Color::BLANK);
-	std::pair<int, int> max_pair = judge(stemp.m_board);
-	int max = s->m_cur_played == Color::BLACK ? max_pair.second : max_pair.first;
-	ret.insert(std::pair<GAction*, std::pair<double, double>>(new GAction(a)
-		, {max, max > 3 ? 1 : 0}));
-
-	a.m_color = s->m_cur_played == Color::WHITE ? Color::BLACK : Color::WHITE;
-	for (a.m_x = 0; a.m_x < NROWS; ++a.m_x)
-	{
-		for (a.m_y = 0; a.m_y < NCOLS; ++a.m_y)
-		{
-			if (s->m_board[a.m_x][a.m_y] == Color::BLANK)
-			{
-				s->get_next_state(stemp, a);
-				max_pair = judge(stemp.m_board);
-				int max = s->m_cur_played == Color::BLACK ? max_pair.second : max_pair.first;
-				ret.insert(std::pair<GAction*, std::pair<double, double>>(new GAction(a)
-					, { max, max > 3 ? 1 : 0 }));
-			}
-		}
-	}
-	return ret;
+	b = max_black;
+	w = max_white;
 }

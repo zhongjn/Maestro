@@ -1,5 +1,5 @@
 #pragma once
-#include <map>
+#include <vector>
 #include <string>
 
 #define NROWS 15
@@ -23,7 +23,13 @@ enum class Color
 class GAction
 {
 public:
-	GAction(int x, int y, Color color);
+	GAction(int x, int y, Color color)
+	{
+		m_x = x;
+		m_y = y;
+		m_color = color;
+	}
+
 	~GAction() = default;
 	int m_x;
 	int m_y;
@@ -33,8 +39,34 @@ public:
 class GState
 {
 public:
-	GState();
-	GState(GState& s);
+	GState()
+	{
+		for (int i = 0; i < NROWS; ++i)
+		{
+			for (int j = 0; j < NCOLS; ++j)
+			{
+				m_board[i][j] = Color::BLANK;
+			}
+		}
+		m_cur_played = Color::WHITE;					// black first
+		m_last_played = Color::BLACK;
+		m_result = State::NOTEND;
+	}
+
+	GState(GState& s)
+	{
+		for (int i = 0; i < NROWS; ++i)
+		{
+			for (int j = 0; j < NCOLS; ++j)
+			{
+				m_board[i][j] = s.m_board[i][j];
+			}
+		}
+		m_cur_played = s.m_cur_played;
+		m_last_played = s.m_last_played;
+		m_result = State::NOTEND;
+	}
+
 	~GState() = default;
 
 	GState* get_next_state(const GAction& a);
@@ -48,6 +80,17 @@ public:
 	Color m_last_played;
 };
 
+struct NNPair
+{
+	GAction* m_a;
+	double m_p;
+	double m_v;
+	NNPair(GAction* a, double p, double v)
+	{
+		m_a = a;
+		m_p = p;
+		m_v = v;
+	}
+};
 
-std::pair<int, int> judge(Color board[NROWS][NCOLS]);
-std::map<GAction*, std::pair<double, double>> NN(GState* s);
+void judge(Color board[NROWS][NCOLS], int& b, int& w);

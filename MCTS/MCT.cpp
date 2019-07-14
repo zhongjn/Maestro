@@ -1,33 +1,33 @@
 #include "MCT.h"
 #include <cmath>
 
-MCTNode::MCTNode(MCTNode * parent, double P, double V, GState * state)
+MCTNode::MCTNode(MCTNode* parent, double p, GAction* a, GState* s)
 {
-	m_N = 1;				// 0 or 1? or it doesn't matter
-	m_P = P;
-	m_Q = V;
-	m_V = V;
-	m_totalV = V;
+	m_N = 0;
+	m_P = p;
+	m_Q = 0;
+	m_W = 0;
 	m_parent = parent;
-	m_state = state;
+	m_state = s;
+	m_action = a;
 }
 
 MCTNode::~MCTNode()
 {
-	for (std::map<GAction*, MCTNode*>::iterator iter = m_map.begin(); iter != m_map.end(); ++iter)
+	for (std::vector<MCTNode*>::iterator iter = m_children.begin(); iter != m_children.end(); ++iter)
 	{
-		if (iter->first)
+		if (*iter)
 		{
-			delete iter->first;
-		}
-		if (iter->second)
-		{
-			delete iter->second;
+			delete *iter;
 		}
 	}
 	if (m_state)
 	{
 		delete m_state;
+	}
+	if (m_action)
+	{
+		delete m_action;
 	}
 }
 
@@ -35,77 +35,73 @@ MCTNode * MCTNode::select_best(double kucb)
 {
 	MCTNode* ret = nullptr;
 	double max;
-	for (std::map<GAction*, MCTNode*>::iterator iter = m_map.begin(); iter != m_map.end(); ++iter)
+	for (std::vector<MCTNode*>::iterator iter = m_children.begin(); iter != m_children.end(); ++iter)
 	{
-		double ucb = iter->second->cal_UCB(kucb);
+		double ucb = (*iter)->cal_UCB(kucb);
 		if (ret == nullptr)
 		{
 			max = ucb;
-			ret = iter->second;
+			ret = *iter;
 		}
 		else if (max < ucb)
 		{
 			max = ucb;
-			ret = iter->second;
+			ret = *iter;
 		}
 	}
 	return ret;
 }
 
-int MCTNode::expand(std::map<GAction*, std::pair<double, double>> actions)
+int MCTNode::expand(std::vector<NNPair>&& actions)
 {
-	for (std::map<GAction*, std::pair<double, double>>::iterator iter = actions.begin();
+	for (std::vector<NNPair>::iterator iter = actions.begin();
 		iter != actions.end(); ++iter)
 	{
-		if (m_map.find(iter->first) == m_map.end())
+		MCTNode* new_node = new MCTNode(this, iter->m_p,
+			iter->m_a, m_state->get_next_state(*(iter->m_a)));
+		m_children.push_back(new_node);
+		State v = new_node->m_state->m_result;
+		if (v != State::NOTEND)
 		{
-			MCTNode* new_node = new MCTNode(this, iter->second.first,
-				iter->second.second, m_state->get_next_state(*(iter->first)));
-			// May be improved by emplace
-			m_map.insert(std::pair<GAction*, MCTNode*>(iter->first, new_node));
-			State V = new_node->m_state->m_result;
-			if (V != State::NOTEND)
-			{
-				// terminated
-				new_node->m_Q = new_node->m_V = new_node->m_totalV = int(V);
-			}
-
-			new_node->backup();
+			new_node->backup(int(v));
+		}
+		else
+		{
+			new_node->backup(iter->m_v);
 		}
 	}
 	return 0;
 }
 
-void MCTNode::backup()
+void MCTNode::backup(double v)
 {
 	MCTNode* pcur = m_parent;
-	int V = -m_V;
+	v = -v;
 	while (pcur != nullptr)
 	{
-		pcur->m_totalV += V;
-		pcur->m_Q = pcur->m_totalV / pcur->m_N;
+		pcur->m_N++;
+		pcur->m_W += v;
+		pcur->m_Q = pcur->m_W / pcur->m_N;
 		pcur = pcur->m_parent;
-		V = -V;
+		v = -v;
 	}
 }
 
 MCT::MCT(GState * init_state, double t, double kpi, double kucb)
 {
-	m_ptrcur = m_root = new MCTNode(nullptr, 1, 0, init_state);
-	// TODO: temperature should be selected carefully
+	m_root = new MCTNode(nullptr, 0, nullptr, init_state);
 	m_t = t;
 	m_kpi = kpi;
 	m_kucb = kucb;
 }
 
-void MCT::simulate(std::function<std::map<GAction*, std::pair<double, double>>(GState*)> NN)
+void MCT::simulate(std::function<std::vector<NNPair>(GState*)> NN)
 {
-	MCTNode* pcur = m_ptrcur;
+	MCTNode* pcur = m_root;
 	// simulation
 	while (pcur->m_state->m_result == State::NOTEND)
 	{
-		pcur->m_N++;
-		if (pcur->m_map.size() == 0)
+		if (pcur->m_children.size() == 0)
 		{
 			pcur->expand(NN(pcur->m_state));
 			// backup is done in expand
@@ -114,26 +110,33 @@ void MCT::simulate(std::function<std::map<GAction*, std::pair<double, double>>(G
 	}
 }
 
-std::map<GAction*, double> MCT::get_probabilities()
+std::vector<PiPair> MCT::get_pi()
 {
-	std::map<GAction*, double> ret;
-	for (std::map<GAction*, MCTNode*>::iterator iter = m_ptrcur->m_map.begin();
-		iter != m_ptrcur->m_map.end(); ++iter)
+	std::vector<PiPair> ret;
+	for (std::vector<MCTNode*>::iterator iter = m_root->m_children.begin();
+		iter != m_root->m_children.end(); ++iter)
 	{
-		ret.insert({ iter->first, m_kpi * pow(iter->second->m_N, (double)1 / m_t) });
+		ret.push_back(PiPair((*iter)->m_action, m_kpi * pow((*iter)->m_N, (double)1 / m_t)));
 	}
 	return ret;
 }
 
 void MCT::move(GAction * a)
 {
-	std::map<GAction*, MCTNode*>::iterator next = m_ptrcur->m_map.find(a);
-	if (next != m_ptrcur->m_map.end())
+	std::vector<MCTNode*>::iterator next = m_root->m_children.begin();
+	for (; next != m_root->m_children.end(); ++next)
 	{
-		m_ptrcur = next->second;
-		m_ptrcur->m_parent->m_map.erase(next);
-		delete m_ptrcur->m_parent;
-		m_ptrcur->m_parent = nullptr;
+		if ((*next)->m_action == a)
+		{
+			break;
+		}
+	}
+	if (next != m_root->m_children.end())
+	{
+		m_root = *next;
+		m_root->m_parent->m_children.erase(next);
+		delete m_root->m_parent;
+		m_root->m_parent = nullptr;
 	}
 	else
 	{
