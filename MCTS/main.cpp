@@ -94,6 +94,7 @@ std::vector<NNPair> NN(GState* s)
 	int b, w;
 	judge(stemp.m_board, b, w);
 	int max = cur_player == Color::BLACK ? b : w;
+	double sum = max;
 	ret.push_back(NNPair(new GAction(a), max, max > 3 ? 1 : 0));
 
 	a.m_color = cur_player;
@@ -106,9 +107,15 @@ std::vector<NNPair> NN(GState* s)
 				s->get_next_state(stemp, a);
 				judge(stemp.m_board, b, w);
 				int max = cur_player == Color::BLACK ? b : w;
+				sum += max;
 				ret.push_back(NNPair(new GAction(a), max, max > 3 ? 1 : 0));
 			}
 		}
+	}
+
+	for (int i = 0; i < ret.size(); ++i)
+	{
+		ret[i].m_p = ret[i].m_p / sum;
 	}
 	return ret;
 }
