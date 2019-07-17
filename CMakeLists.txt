@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.10)
 
 set(src_common
-    abstract_game
+    game_base
     search_base
     search_graph
     search_tree

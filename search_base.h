@@ -1,32 +1,33 @@
 #pragma once
 #include <vector>
 #include <memory>
-#include "abstract_game.h"
+#include "game_base.h"
 #include <cassert>
 
 namespace Maestro {
     using namespace std;
 
-    template<typename TObsv, typename TMov>
+    template<typename TGame>
     class IMonteCarloSearch {
     public:
+
         struct MoveVisit {
-            TMov move;
+            Move<TGame> move;
             int visit_count;
         };
         virtual void simulate(int k) = 0;
         virtual vector<MoveVisit> get_moves() const = 0;
         virtual float get_value() const = 0;
-        virtual unique_ptr<IGame<TObsv, TMov>> get_game_snapshot() const = 0;
-        virtual void move(TMov move) = 0;
+        virtual unique_ptr<TGame> get_game_snapshot() const = 0;
+        virtual void move(Move<TGame> move) = 0;
         void move_best() {
             auto moves = get_moves();
             int max_visit = -1;
-            TMov move;
+            Move<TGame> max_move;
             assert(moves.size() > 0);
             for (auto& m : moves) {
                 if (m.visit_count > max_visit) {
-                    move = m.move;
+                    max_move = m.move;
                 }
             }
         }

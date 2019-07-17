@@ -2,8 +2,8 @@
 #include "search_base.h"
 
 namespace Maestro {
-    template<typename TObsv, typename TMov>
-    class MonteCarloTreeSearch : public IMonteCarloSearch<TObsv, TMov> {
+    template<typename TGame>
+    class MonteCarloTreeSearch : public IMonteCarloSearch<TGame> {
         // TODO @wsh
     };
 }
