@@ -49,7 +49,6 @@ public:
 			}
 		}
 		m_cur_played = Color::WHITE;					// black first
-		m_last_played = Color::BLACK;
 		m_result = State::NOTEND;
 	}
 
@@ -63,7 +62,6 @@ public:
 			}
 		}
 		m_cur_played = s.m_cur_played;
-		m_last_played = s.m_last_played;
 		m_result = State::NOTEND;
 	}
 
@@ -77,8 +75,11 @@ public:
 	Color m_board[NROWS][NCOLS];
 	State m_result;
 	Color m_cur_played;
-	Color m_last_played;
 };
+
+// tie return 1, else return 0
+int judge(Color board[NROWS][NCOLS], int& b, int& w);
+
 
 struct NNPair
 {
@@ -93,4 +94,4 @@ struct NNPair
 	}
 };
 
-void judge(Color board[NROWS][NCOLS], int& b, int& w);
+std::vector<NNPair> NN(GState* s);

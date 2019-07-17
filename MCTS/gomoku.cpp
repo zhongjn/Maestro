@@ -3,68 +3,42 @@
 GState* GState::get_next_state(const GAction& a)
 {
 	GState* ret = nullptr;
-	if (a.m_color == Color::BLANK)
-	{
-		// blank means no move
-		ret = new GState(*this);
-		ret->m_last_played = ret->m_cur_played;
-		ret->m_cur_played = Color::BLANK;
-		ret->check_win();
-	}
-	else if (m_board[a.m_x][a.m_y] == Color::BLANK)
+	if (m_board[a.m_x][a.m_y] == Color::BLANK)
 	{
 		ret = new GState(*this);
 		ret->m_board[a.m_x][a.m_y] = a.m_color;
-		ret->m_last_played = ret->m_cur_played;
 		ret->m_cur_played = a.m_color;
 		ret->check_win();
 	}
-	else
-	{
-		// invalid move
-		throw;
-	}
+
 	return ret;
 }
 
 void GState::get_next_state(GState& s, const GAction& a)
 {
-	if (a.m_color == Color::BLANK)
-	{
-		// blank means no move
-		s = GState(*this);
-		s.m_last_played = s.m_cur_played;
-		s.m_cur_played = Color::BLANK;
-		s.check_win();
-	}
-	else if (m_board[a.m_x][a.m_y] == Color::BLANK)
+	if (m_board[a.m_x][a.m_y] == Color::BLANK)
 	{
 		s = GState(*this);
 		s.m_board[a.m_x][a.m_y] = a.m_color;
-		s.m_last_played = s.m_cur_played;
 		s.m_cur_played = a.m_color;
 		s.check_win();
-	}
-	else
-	{
-		// invalid move
-		throw;
 	}
 }
 
 void GState::check_win()
 {
-	if (m_last_played == Color::BLANK && m_cur_played == Color::BLANK)
+	int w, b;
+	if (judge(m_board, b, w) == 1)
 	{
 		m_result = State::TIE;
-		return;
 	}
-
-	int w, b;
-	judge(m_board, b, w);
-	if ((b == 5 && m_cur_played == Color::BLACK) || (w == 5 && m_cur_played == Color::WHITE))
+	else if ((b == 5 && m_cur_played == Color::BLACK) || (w == 5 && m_cur_played == Color::WHITE))
 	{
 		m_result = State::WIN;
+	}
+	else if ((b == 5 && m_cur_played == Color::WHITE) || (w == 5 && m_cur_played == Color::BLACK))
+	{
+		m_result = State::LOSE;
 	}
 	else
 	{
@@ -97,9 +71,9 @@ std::string GState::to_string()
 	return ret;
 }
 
-void judge(Color board[NROWS][NCOLS], int& b, int& w)
+int judge(Color board[NROWS][NCOLS], int& b, int& w)
 {
-	Color winner = Color::BLANK;	// for not end
+	Color winner = Color::BLANK;
 	int count = 0;
 	int max_white = 0;
 	int max_black = 0;
@@ -315,4 +289,57 @@ result:
 	}
 	b = max_black;
 	w = max_white;
+
+	for (int i = 0; i < NROWS; ++i)
+	{
+		for (int j = 0; j < NCOLS; ++j)
+		{
+			if (board[i][j] == Color::BLANK)
+			{
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
+std::vector<NNPair> NN(GState* s)
+{
+	Color cur_player = Color::BLANK;
+	if (s->m_cur_played == Color::WHITE)
+	{
+		cur_player = Color::BLACK;
+	}
+	else if (s->m_cur_played == Color::BLACK)
+	{
+		cur_player = Color::WHITE;
+	}
+
+	std::vector<NNPair> ret;
+	GState stemp(*s);
+	GAction a = GAction(0, 0, cur_player);
+	int b, w;
+	int max;
+	double sum = 0;
+
+	for (a.m_x = 0; a.m_x < NROWS; ++a.m_x)
+	{
+		for (a.m_y = 0; a.m_y < NCOLS; ++a.m_y)
+		{
+			if (s->m_board[a.m_x][a.m_y] == Color::BLANK)
+			{
+				s->get_next_state(stemp, a);
+				judge(stemp.m_board, b, w);
+				int max = cur_player == Color::BLACK ? (b - w + 5) : (w - b + 5);
+				sum += max;
+				ret.push_back(NNPair(new GAction(a), max, ((double)max - 5) / 10));
+			}
+		}
+	}
+
+	for (int i = 0; i < ret.size(); ++i)
+	{
+		ret[i].m_p = ret[i].m_p / sum;
+	}
+	return ret;
 }

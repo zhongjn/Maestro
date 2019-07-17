@@ -4,8 +4,6 @@
 
 using namespace std;
 
-std::vector<NNPair> NN(GState* s);
-
 int main(void)
 {
 	GState* init_state = new GState();
@@ -15,12 +13,12 @@ int main(void)
 	
 	while (tree.cur_state()->m_result == State::NOTEND)
 	{
-		for (int i = 0; i < 1000; ++i)
+		for (int i = 0; i < 50; ++i)
 		{
 			tree.simulate(NN);
 		}
 		vector<PiPair> pi = tree.get_pi();
-		GAction* opt_a = nullptr;
+		GAction *opt_a = nullptr;
 		double max_p;
 		for (vector<PiPair>::iterator iter = pi.begin(); iter != pi.end(); ++iter)
 		{
@@ -35,7 +33,7 @@ int main(void)
 				max_p = iter->m_p;
 			}
 		}
-		tree.move(opt_a);
+		tree.take_action(opt_a);
 		cout << "RUN " << c++;
 		if (tree.cur_state()->m_cur_played == Color::BLACK)
 		{
@@ -70,53 +68,5 @@ int main(void)
 	}
 
 	return 0;
-}
-
-std::vector<NNPair> NN(GState* s)
-{
-	Color cur_player = Color::BLANK;
-	if (s->m_cur_played == Color::WHITE)
-	{
-		cur_player = Color::BLACK;
-	}
-	else if (s->m_cur_played == Color::BLACK)
-	{
-		cur_player = Color::WHITE;
-	}
-	else
-	{
-		cur_player = s->m_last_played;
-	}
-
-	std::vector<NNPair> ret;
-	GState stemp(*s);
-	GAction a = GAction(0, 0, Color::BLANK);
-	int b, w;
-	judge(stemp.m_board, b, w);
-	int max = cur_player == Color::BLACK ? b : w;
-	double sum = max;
-	ret.push_back(NNPair(new GAction(a), max, max > 3 ? 1 : 0));
-
-	a.m_color = cur_player;
-	for (a.m_x = 0; a.m_x < NROWS; ++a.m_x)
-	{
-		for (a.m_y = 0; a.m_y < NCOLS; ++a.m_y)
-		{
-			if (s->m_board[a.m_x][a.m_y] == Color::BLANK)
-			{
-				s->get_next_state(stemp, a);
-				judge(stemp.m_board, b, w);
-				int max = cur_player == Color::BLACK ? b : w;
-				sum += max;
-				ret.push_back(NNPair(new GAction(a), max, max > 3 ? 1 : 0));
-			}
-		}
-	}
-
-	for (int i = 0; i < ret.size(); ++i)
-	{
-		ret[i].m_p = ret[i].m_p / sum;
-	}
-	return ret;
 }
 

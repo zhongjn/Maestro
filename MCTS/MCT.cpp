@@ -1,5 +1,5 @@
-#include "MCT.h"
 #include <cmath>
+#include "MCT.h"
 
 MCTNode::MCTNode(MCTNode* parent, double p, GAction* a, GState* s)
 {
@@ -121,7 +121,7 @@ std::vector<PiPair> MCT::get_pi()
 	return ret;
 }
 
-void MCT::move(GAction * a)
+void MCT::take_action(GAction* a)
 {
 	std::vector<MCTNode*>::iterator next = m_root->m_children.begin();
 	for (; next != m_root->m_children.end(); ++next)
