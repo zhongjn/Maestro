@@ -14,24 +14,15 @@ namespace Maestro {
         Player winner;
     };
 
-    // 继承时传入子类类型到TSelf，实现静态多态
-    template<typename TSelf, typename TObsv, typename TMov>
+    template<typename TObsv, typename TMov>
     class IGame {
         int steps = 0;
-
     public:
-
-        void move(TMov mov) {
-            return static_cast<TSelf*>(this)->move(mov);
-        }
-
-        TObsv observation(Player pov) const {
-            return static_cast<TSelf*>(this)->observation(pov);
-        }
-
-        Status status() const {
-            return static_cast<TSelf*>(this)->status();
-        }
+        virtual void move(TMov mov) = 0;
+        virtual TObsv get_obsv(Player pov) const = 0;
+        virtual Player get_player() const = 0;
+        virtual Status get_status() const = 0;
+        virtual int get_hash() const = 0;
     };
 
     template<typename TMov>
@@ -47,12 +38,9 @@ namespace Maestro {
         float v;
     };
 
-    // 传入自身实现静态多态
-    template<typename TSelf, typename TObsv, typename TMov>
+    template<typename TObsv, typename TMov>
     class IEvaluator {
     public:
-        Evaluation<TMov> evaluate(const TObsv& obsv) {
-            return static_cast<TSelf*>(this)->evaluate(obsv);
-        }
+        virtual Evaluation<TMov> evaluate(const TObsv& obsv) = 0;
     };
 }
