@@ -19,7 +19,7 @@ int main(void)
 		}
 		vector<PiPair> pi = tree.get_pi();
 		GAction *opt_a = nullptr;
-		double max_p;
+		float max_p;
 		for (vector<PiPair>::iterator iter = pi.begin(); iter != pi.end(); ++iter)
 		{
 			if (!opt_a)

@@ -320,7 +320,7 @@ std::vector<NNPair> NN(GState* s)
 	GAction a = GAction(0, 0, cur_player);
 	int b, w;
 	int max;
-	double sum = 0;
+	float sum = 0;
 
 	for (a.m_x = 0; a.m_x < NROWS; ++a.m_x)
 	{
@@ -332,7 +332,7 @@ std::vector<NNPair> NN(GState* s)
 				judge(stemp.m_board, b, w);
 				int max = cur_player == Color::BLACK ? (b - w + 5) : (w - b + 5);
 				sum += max;
-				ret.push_back(NNPair(new GAction(a), max, ((double)max - 5) / 10));
+				ret.push_back(NNPair(new GAction(a), max, ((float)max - 5) / 10));
 			}
 		}
 	}

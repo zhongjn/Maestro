@@ -1,7 +1,7 @@
 #include <cmath>
 #include "MCT.h"
 
-MCTNode::MCTNode(MCTNode* parent, double p, GAction* a, GState* s)
+MCTNode::MCTNode(MCTNode* parent, float p, GAction* a, GState* s)
 {
 	m_N = 0;
 	m_P = p;
@@ -31,13 +31,13 @@ MCTNode::~MCTNode()
 	}
 }
 
-MCTNode * MCTNode::select_best(double kucb)
+MCTNode * MCTNode::select_best(float kucb)
 {
 	MCTNode* ret = nullptr;
-	double max;
+	float max;
 	for (std::vector<MCTNode*>::iterator iter = m_children.begin(); iter != m_children.end(); ++iter)
 	{
-		double ucb = (*iter)->cal_UCB(kucb);
+		float ucb = (*iter)->cal_UCB(kucb);
 		if (ret == nullptr)
 		{
 			max = ucb;
@@ -73,7 +73,7 @@ int MCTNode::expand(std::vector<NNPair>&& actions)
 	return 0;
 }
 
-void MCTNode::backup(double v)
+void MCTNode::backup(float v)
 {
 	MCTNode* pcur = m_parent;
 	v = -v;
@@ -87,7 +87,7 @@ void MCTNode::backup(double v)
 	}
 }
 
-MCT::MCT(GState * init_state, double t, double kpi, double kucb)
+MCT::MCT(GState * init_state, float t, float kpi, float kucb)
 {
 	m_root = new MCTNode(nullptr, 0, nullptr, init_state);
 	m_t = t;
@@ -116,7 +116,7 @@ std::vector<PiPair> MCT::get_pi()
 	for (std::vector<MCTNode*>::iterator iter = m_root->m_children.begin();
 		iter != m_root->m_children.end(); ++iter)
 	{
-		ret.push_back(PiPair((*iter)->m_action, m_kpi * pow((*iter)->m_N, (double)1 / m_t)));
+		ret.push_back(PiPair((*iter)->m_action, m_kpi * pow((*iter)->m_N, (float)1 / m_t)));
 	}
 	return ret;
 }

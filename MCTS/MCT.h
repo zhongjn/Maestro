@@ -6,10 +6,10 @@
 class MCTNode
 {
 public:
-	MCTNode(MCTNode* parent, double p, GAction* a, GState* s);
+	MCTNode(MCTNode* parent, float p, GAction* a, GState* s);
 	~MCTNode();
 
-	MCTNode* select_best(double kucb);
+	MCTNode* select_best(float kucb);
 	int expand(std::vector<NNPair>&& actions);
 
 	std::vector<MCTNode*> m_children;	// children
@@ -17,22 +17,22 @@ public:
 	GAction* m_action;					// action
 	GState* m_state;					// game state
 	int m_N;							// visit cnt
-	double m_P;							// prior probability
-	double m_Q;							// action value Q
-	double m_W;							// sum of V in subtree, used in calculating Q
+	float m_P;							// prior probability
+	float m_Q;							// action value Q
+	float m_W;							// sum of V in subtree, used in calculating Q
 
 private:
-	inline double cal_UCB(double k)
+	inline float cal_UCB(float k)
 	{
 		return m_Q + m_P * k * sqrt(m_parent->m_N) / (1 + m_N);
 	}
-	void backup(double v);
+	void backup(float v);
 
 };
 
 struct PiPair
 {
-	PiPair(GAction* a, double p)
+	PiPair(GAction* a, float p)
 	{
 		m_a = a;
 		m_p = p;
@@ -40,13 +40,13 @@ struct PiPair
 
 	// m_a may be deleted after take move
 	GAction* m_a;
-	double m_p;
+	float m_p;
 };
 
 class MCT
 {
 public:
-	MCT(GState* init_state, double t, double kpi, double kucb);
+	MCT(GState* init_state, float t, float kpi, float kucb);
 	void simulate(std::function<std::vector<NNPair>(GState*)> NN);
 	// return pi
 	std::vector<PiPair> get_pi();
@@ -55,14 +55,14 @@ public:
 	{
 		return m_root->m_state;
 	}
-	inline void set_t(double t)
+	inline void set_t(float t)
 	{
 		m_t = t;
 	}
 
 private:
 	MCTNode* m_root;
-	double m_t;
-	double m_kpi;
-	double m_kucb;
+	float m_t;
+	float m_kpi;
+	float m_kucb;
 };

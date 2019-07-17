@@ -84,9 +84,9 @@ int judge(Color board[NROWS][NCOLS], int& b, int& w);
 struct NNPair
 {
 	GAction* m_a;
-	double m_p;
-	double m_v;
-	NNPair(GAction* a, double p, double v)
+	float m_p;
+	float m_v;
+	NNPair(GAction* a, float p, float v)
 	{
 		m_a = a;
 		m_p = p;
