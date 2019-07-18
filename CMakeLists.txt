@@ -1,7 +1,10 @@
 cmake_minimum_required (VERSION 3.10)
 
 set(src_common
-
+    game_base
+    search_base
+    search_graph
+    search_tree
 )
 
 set(src_main
