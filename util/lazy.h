@@ -14,7 +14,12 @@ namespace Maestro {
         Lazy() = delete;
         Lazy(const Lazy&) = delete;
         Lazy(Lazy&&) = delete;
-        Lazy(function<T()>&& init_fn) : _init_fn(forward<function<T()>>(init_fn)) {}
+        Lazy(function<T()> init_fn) noexcept : _init_fn(move(init_fn)) {}
+        ~Lazy() {
+            if (_init) {
+                _value.~T();
+            }
+        }
         T& value() {
             if (!_init) {
                 new(&_value) T(_init_fn());
