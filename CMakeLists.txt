@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.10)
 
 set(src_common
+    util/lazy
+    util/spin_lock
     game_base
     search_base
     search_graph
@@ -13,6 +15,7 @@ set(src_main
 
 set(src_tests
     test/test
+    test/01_lazy
 )
 
 add_executable (Main ${src_common} ${src_main})

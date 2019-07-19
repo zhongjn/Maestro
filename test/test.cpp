@@ -26,7 +26,7 @@ int main() {
             ss_status << "unhandled error! " << ex.what();
         }
 
-        cout << ss_name.str() << "- " << ss_status.str();
+        cout << ss_name.str() << " - " << ss_status.str() << endl;
         cur++;
     }
     if (n_succeeded == test_cases.size()) {
