@@ -56,6 +56,7 @@ namespace Maestro {
         virtual Evaluation<TGame> evaluate(const Observation<TGame>& obsv) = 0;
     };
 
+#if __INTELLISENSE__
     // Sample here
     class SampleGame;
 
@@ -84,4 +85,6 @@ namespace Maestro {
             return Evaluation<SampleGame>();
         }
     };
+#endif
+
 }
