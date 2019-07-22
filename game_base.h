@@ -2,6 +2,8 @@
 #include <vector>
 
 namespace Maestro {
+    using namespace std;
+
     enum class Player {
         None = 0,
         A = 1,
@@ -80,7 +82,7 @@ namespace Maestro {
         Status get_status() const { return Status(); }
         size_t get_hash() const { return 0; }
         bool could_transfer_to(const SampleGame& another) const { return true; }
-        virtual vector<Move<SampleGame>> get_all_legal_moves() const { return vector<Move<SampleGame>>(); }
+        vector<Move<SampleGame>> get_all_legal_moves() const { return vector<Move<SampleGame>>(); }
         bool operator==(const SampleGame& another) const { return true; }
         SampleGame() = default;
     };
