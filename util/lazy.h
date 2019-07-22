@@ -1,6 +1,6 @@
 #pragma once
-#include <type_traits>
 #include <functional>
+#include "nullable.h"
 
 namespace Maestro {
     using namespace std;
@@ -8,23 +8,18 @@ namespace Maestro {
     template<typename T>
     class Lazy {
         function<T()> _init_fn;
-        bool _init = false;
-        union { T _value; };
+        Nullable<T> _t;
     public:
-        Lazy() = delete;
-        Lazy(const Lazy&) = delete;
-        Lazy(Lazy&&) = delete;
+        Lazy() = default;
         Lazy(function<T()> init_fn) noexcept : _init_fn(move(init_fn)) {}
-        ~Lazy() {
-            if (_init) {
-                _value.~T();
-            }
-        }
+        template<typename F>
+        Lazy(F init_fn) : Lazy(function<T()>(init_fn)) {};
+
         T& value() {
-            if (!_init) {
-                new(&_value) T(_init_fn());
+            if (!_t) {
+                _t = _init_fn();
             }
-            return _value;
+            return _t.value();
         }
         T* operator->() {
             return &value();
