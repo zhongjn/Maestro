@@ -1,7 +1,9 @@
 cmake_minimum_required (VERSION 3.10)
 
 set(src_common
+    util/expirable
     util/lazy
+    util/nullable
     util/spin_lock
     game_base
     search_base
