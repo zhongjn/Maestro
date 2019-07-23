@@ -14,24 +14,24 @@ namespace Maestro {
 		}
 
 		~MCTSNode() {
-			for (std::vector<MCTNode*>::iterator iter = m_children.begin(); iter != m_children.end(); ++iter) {
-				if (*iter) {
-					delete* iter;
+			for (MCTSNode<TGame>*& child : m_children) {
+				if (child) {
+					delete child;
 				}
 			}
 		}
 
-		MCTSNode* select_best(float kucb) {
+		MCTSNode* select_best(float kucb, bool diri = false) {
 			MCTSNode* ret = nullptr;
 			float max;
-			for (std::vector<MCTSNode*>::iterator iter = m_children.begin(); iter != m_children.end(); ++iter) {
-				float ucb = (*iter)->cal_UCB(kucb);
+			for (MCTSNode<TGame>*& child : m_children) {
+				float ucb = child->cal_UCB(kucb);
 				if (ret == nullptr) {
 					max = ucb;
-					ret = *iter;
+					ret = child;
 				} else if (max < ucb) {
 					max = ucb;
-					ret = *iter;
+					ret = child;
 				}
 			}
 			return ret;
@@ -41,14 +41,13 @@ namespace Maestro {
 			if (!m_expanded) {
 				Status s = m_game->get_status();
 				if (s.end) {
-					new_node->backup(new_node->m_game->get_player == s.winner ? 1 : -1);
+					backup(m_game->get_player == s.winner ? 1 : -1);
 				} else {
-					new_node->backup(iter->m_v);
-					for (std::vector<MovePrior<TGame>>::iterator iter = eval.p.begin();
-							iter != eval.p.end(); ++iter) {
-						MCTSNode* new_node = new MCTSNode(this, *iter, new TGame(*m_game));
+					backup(eval.v);
+					for (MovePrior<TGame>& p : eval.p) {
+						MCTSNode* new_node = new MCTSNode(this, p, new TGame(*m_game));
 						m_children.push_back(new_node);
-						new_node->m_game->move(iter->move);
+						new_node->m_game->move(p.move);
 					}
 				}
 				m_expanded = true;
@@ -57,8 +56,9 @@ namespace Maestro {
 			}
 		}
 
-		inline float cal_UCB(float k) {
-			return m_Q + m_move.p * k * sqrt(m_parent->m_N) / (1 + m_N);
+		inline float cal_UCB(float k, float eta = 0, float epsilon = 0) {
+			return m_Q + ((1 - epsilon) * m_move.p + epsilon * eta) 
+				* k * sqrt(m_parent->m_N) / (1 + m_N);
 		}
 
 		void backup(float v) {
@@ -100,7 +100,7 @@ namespace Maestro {
 				// simulation
 				while (!pcur->m_game->get_status().end) {
 					if (!pcur->m_expanded) {
-						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv());
+						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv()));
 						// backup is done in expand
 					}
 					pcur = pcur->select_best(m_kucb);
@@ -110,9 +110,8 @@ namespace Maestro {
 
 		vector<MoveVisit> get_moves() const {
 			vector<MoveVisit> ret;
-			for (std::vector<MCTSNode<TGame>*>::iterator iter = m_root->m_children.begin();
-					iter != m_root->m_children.end(); ++iter) {
-				ret.push_back(MoveVisit() { (*iter)->m_move.move, (*iter)->m_N });
+			for (MCTSNode<TGame>*& child : m_root->m_children) {
+				ret.push_back(MoveVisit{ child->m_move.move, child->m_N });
 			}
 			return ret;
 		}
@@ -149,4 +148,87 @@ namespace Maestro {
 		TGame m_root_game;
 		float m_kucb;
 	};
+}
+
+// https://www.cnblogs.com/yeahgis/archive/2012/07/15/2592698.html
+float rand_gamma(float alpha) {
+	float u, v;
+	float x, y;
+	float b, c;
+	float w, z;
+	bool accept = false;
+	float t;
+
+	if (alpha > 1.0) {
+		/* Best's rejection algorithm XG for gamma random variates (Best, 1978) */
+		b = alpha - 1;
+		c = 3 * alpha - 0.75;
+		do {
+			u = rand() / RAND_MAX;
+			v = rand() / RAND_MAX;
+
+			w = u * (1 - u);
+			y = sqrt(c / w) * (u - 0.5);
+			x = b + y;
+			if (x >= 0) {
+				z = 64 * w * w * w * v * v;
+				float zz = 1 - 2 * y * y / x;
+				if (z - zz < 1e-10) {
+					accept = true;
+				} else {
+					accept = false;
+				}
+				if (!accept) {
+					float logz = log(z);
+					float zzz = 2 * (b * log(x / b) - y);
+					if (logz - zzz < 1e-10) {
+						accept = true;
+					} else {
+						accept = false;
+					}
+				}
+			}
+		} while (!accept);
+		return x;
+	} else if (alpha == 1.0) {
+		x = rand() / RAND_MAX;
+		// return -log(1 - x);
+		return -log(x);
+	} else if (alpha < 1.0) {
+		float dv = 0.0;
+		float b = (exp(1.0) + alpha) / exp(1.0);
+		do {
+			float u1 = rand() / RAND_MAX;
+			float p = b * rand() / RAND_MAX;
+			float y;
+			if (p > 1) {
+				y = -log((b - p) / alpha);
+				if (u1 < pow(y, alpha - 1)) {
+					dv = y;
+					break;
+				}
+			} else {
+				y = pow(p, 1 / alpha);
+				if (u1 < exp(-y)) {
+					dv = y;
+					break;
+				}
+			}
+		} while (1);
+		return dv;
+	}
+	return -1;
+}
+
+std::vector<float> rand_dirichlet(int n, float concentration) {
+	std::vector<float> ret = std::vector<float>(n, 0);
+	float sum = 0;
+	for (int i = 0; i < n; ++i) {
+		ret[i] = rand_gamma(concentration);
+		sum += ret[i];
+	}
+	for (int i = 0; i < n; ++i) {
+		ret[i] = ret[i] / sum;
+	}
+	return ret;
 }
