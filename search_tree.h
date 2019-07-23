@@ -42,9 +42,11 @@ namespace Maestro {
 			if (!m_expanded) {
 				Status s = m_game->get_status();
 				if (s.end) {
-					new_node->backup(new_node->m_game->get_player == s.winner ? 1 : -1);
+                    // TODO
+					// new_node->backup(new_node->m_game->get_player == s.winner ? 1 : -1);
 				} else {
-					new_node->backup(iter->m_v);
+                    // TODO
+					// new_node->backup(iter->m_v);
 					for (std::vector<MovePrior<TGame>>::iterator iter = eval.p.begin();
 							iter != eval.p.end(); ++iter) {
 						MCTSNode* new_node = new MCTSNode(this, *iter, new TGame(*m_game));
