@@ -21,7 +21,7 @@ namespace Maestro {
 			}
 		}
 
-		MCTSNode* select_best(float kucb, bool diri = false) {
+		MCTSNode* select_best(float kucb) {
 			MCTSNode* ret = nullptr;
 			float max;
 			for (MCTSNode<TGame>*& child : m_children) {
@@ -37,8 +37,24 @@ namespace Maestro {
 			return ret;
 		}
 
+		MCTSNode* select_best_with_diri(float kucb, float eta, float alpha) {
+			MCTSNode* ret = nullptr;
+			float max;
+			vector<float> noise = rand_dirichlet(m_children.size(), alpha);
+			for (int i = 0; i < m_children.size(); ++i) {
+				float ucb = m_children[i]->cal_UCB(kucb, eta, noise[i]);
+				if (ret == nullptr) {
+					max = ucb;
+					ret = m_children[i];
+				} else if (max < ucb) {
+					max = ucb;
+					ret = m_children[i];
+				}
+			}
+			return ret;
+		}
+
 		void expand(Evaluation<TGame>&& eval) {
-            // TODO @wsh: 修复编译错误
 			if (!m_expanded) {
 				Status s = m_game->get_status();
 				if (s.end) {
@@ -97,13 +113,11 @@ namespace Maestro {
 		void simulate(int k) {
 			for (int i = 0; i < k; ++i) {
 				MCTSNode<TGame>* pcur = m_root;
-				// simulation
 				while (!pcur->m_game->get_status().end) {
 					if (!pcur->m_expanded) {
 						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv(pcur->m_game->get_player())));
-						// backup is done in expand
 					}
-					pcur = pcur->select_best(m_kucb);
+					pcur = pcur == m_root ? pcur->select_best(m_kucb) : pcur->select_best_with_diri(m_kucb, 0.25, 0.03);
 				}
 			}
 		}
@@ -117,8 +131,8 @@ namespace Maestro {
 		}
 
 		float get_value(Player player) const {
-            // TODO @wsh: 如果玩家不同，取相反数
-			return m_root->m_Q;
+            // 如果玩家不同，取相反数
+			return m_root_game.get_player() == player ? m_root->m_Q : -m_root->m_Q;
 		}
 
 		TGame get_game_snapshot() const {
