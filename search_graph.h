@@ -127,7 +127,6 @@ namespace Maestro {
             _root = make_shared<State>(&_transposition, game);
         }
 
-        // TODO @zjn
         virtual void simulate(int k) {
             for (int i = 0; i < k; i++) {
                 _timestamp++;
@@ -162,7 +161,7 @@ namespace Maestro {
                     }
 
                     vector<shared_ptr<Action>>& actions = current->child_actions.value();
-                    // TODO: select action
+                    // TODO @zjn: select action
                     shared_ptr<Action> action;
 
                     shared_ptr<State> next = action->child_state.value();
