@@ -2,5 +2,7 @@
 
 using namespace Maestro;
 
-// for compile usage
-MonteCarloGraphSearch<SampleGame> mcgs(nullptr, SampleGame());
+static void test_compile() {
+    // for compile usage
+    MonteCarloGraphSearch<SampleGame> mcgs(nullptr, SampleGame());
+}

@@ -2,5 +2,7 @@
 
 using namespace Maestro;
 
-// for compile usage
-MonteCarloTreeSearch<SampleGame> mcts(nullptr, 0, nullptr);
+static void test_compile() {
+    // for compile usage
+    MonteCarloTreeSearch<SampleGame> mcts(nullptr, 0, nullptr);
+}
