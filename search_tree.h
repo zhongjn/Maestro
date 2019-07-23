@@ -38,6 +38,7 @@ namespace Maestro {
 		}
 
 		void expand(Evaluation<TGame>&& eval) {
+            // TODO @wsh: 修复编译错误
 			if (!m_expanded) {
 				Status s = m_game->get_status();
 				if (s.end) {
@@ -84,8 +85,7 @@ namespace Maestro {
 	};
 
 	template<typename TGame>
-	class MonteCarloTreeSearch : public IMonteCarloSearch<TGame> {
-		// TODO @wsh
+	class MonteCarloTreeSearch final : public IMonteCarloSearch<TGame> {
 	public:
 		MonteCarloTreeSearch(TGame* init, float kucb, IEvaluator<TGame>* evaluator) {
 			m_root = new MCTSNode<TGame>(nullptr, MovePrior<TGame>(), init);
@@ -100,7 +100,7 @@ namespace Maestro {
 				// simulation
 				while (!pcur->m_game->get_status().end) {
 					if (!pcur->m_expanded) {
-						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv()));
+						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv(pcur->m_game->get_player())));
 						// backup is done in expand
 					}
 					pcur = pcur->select_best(m_kucb);
@@ -116,12 +116,13 @@ namespace Maestro {
 			return ret;
 		}
 
-		float get_value() const {
+		float get_value(Player player) const {
+            // TODO @wsh: 如果玩家不同，取相反数
 			return m_root->m_Q;
 		}
 
-		unique_ptr<TGame> get_game_snapshot() const {
-			return unique_ptr<TGame>(new TGame(m_root_game));
+		TGame get_game_snapshot() const {
+			return m_root_game;
 		}
 
 		void move(Move<TGame> move) {
