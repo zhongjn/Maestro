@@ -102,7 +102,7 @@ namespace Maestro {
 				// simulation
 				while (!pcur->m_game->get_status().end) {
 					if (!pcur->m_expanded) {
-						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv(pcur->m_game->get_player())));
+						pcur->expand(m_evaluator->evaluate(*pcur->m_game));
 						// backup is done in expand
 					}
 					pcur = pcur->select_best(m_kucb);

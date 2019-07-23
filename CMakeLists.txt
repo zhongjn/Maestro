@@ -6,6 +6,8 @@ set(src_common
     util/nullable
     util/spin_lock
     game_base
+    game_gomoku
+    game_test
     search_base
     search_graph
     search_tree
