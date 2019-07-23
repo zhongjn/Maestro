@@ -22,13 +22,14 @@ namespace Maestro {
             int idx(uint8_t row, uint8_t col) {
                 assert(row < 15);
                 assert(col < 15);
+                return (row << 4) | col;
             }
         public:
             bool operator==(const HalfBoard& bb) const { return _stones == bb._stones; }
             bool get(uint8_t row, uint8_t col) { return _stones[idx(row, col)]; }
             bool get(Move<Gomoku> mov) { return get(mov.row, mov.col); }
             void set(uint8_t row, uint8_t col, bool value) { _stones[idx(row, col)] = value; }
-            bool set(Move<Gomoku> mov, bool value) { set(mov.row, mov.col, value); }
+            void set(Move<Gomoku> mov, bool value) { set(mov.row, mov.col, value); }
             size_t get_hash() const {
                 hash<decltype(_stones)> hash_fn;
                 return hash_fn(_stones);
