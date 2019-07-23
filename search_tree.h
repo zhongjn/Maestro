@@ -9,7 +9,6 @@ namespace Maestro {
 			m_parent = p;
 			m_move = m;
 			m_game = g;
-			m_expanded = false;
 			m_N = m_Q = m_W = 0;
 		}
 
@@ -55,7 +54,7 @@ namespace Maestro {
 		}
 
 		void expand(Evaluation<TGame>&& eval) {
-			if (!m_expanded) {
+			if (!expanded()) {
 				Status s = m_game->get_status();
 				if (s.end) {
 					backup(m_game->get_player == s.winner ? 1 : -1);
@@ -67,7 +66,6 @@ namespace Maestro {
 						new_node->m_game->move(p.move);
 					}
 				}
-				m_expanded = true;
 				delete m_game;
 				m_game = nullptr;
 			}
@@ -76,6 +74,10 @@ namespace Maestro {
 		inline float cal_UCB(float k, float eta = 0, float epsilon = 0) {
 			return m_Q + ((1 - epsilon) * m_move.p + epsilon * eta) 
 				* k * sqrt(m_parent->m_N) / (1 + m_N);
+		}
+
+		inline bool expanded() {
+			return m_game == nullptr;
 		}
 
 		void backup(float v) {
@@ -90,10 +92,9 @@ namespace Maestro {
 			}
 		}
 
-		bool m_expanded;
 		MCTSNode<TGame>* m_parent;					// parent node
 		std::vector<MCTSNode<TGame>*> m_children;	// children
-		TGame* m_game;								// game state
+		TGame* m_game;								// game state, only available in leaf
 		MovePrior<TGame> m_move;					// move and prior probability
 		int m_N;									// visit cnt
 		float m_Q;									// action value Q
@@ -113,8 +114,8 @@ namespace Maestro {
 		void simulate(int k) {
 			for (int i = 0; i < k; ++i) {
 				MCTSNode<TGame>* pcur = m_root;
-				while (!pcur->m_game->get_status().end) {
-					if (!pcur->m_expanded) {
+				while (pcur->expanded() || !pcur->m_game->get_status().end) {
+					if (!pcur->expanded()) {
 						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv(pcur->m_game->get_player())));
 					}
 					pcur = pcur == m_root ? pcur->select_best(m_kucb) : pcur->select_best_with_diri(m_kucb, 0.25, 0.03);
@@ -155,6 +156,24 @@ namespace Maestro {
 			} else {
 				// move doesn't exist
 				throw;
+			}
+			vector<Move<TGame>> moves = m_root->m_game->get_all_legal_moves();
+			int children_size = m_root->m_children.size();
+
+			for (Move<TGame>& m : moves) {
+				bool found = false;
+				for (int i = 0; i < children_size; ++i) {
+					if (m_root->m_children[i]->m_move.move == m) {
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					MCTSNode<TGame>* new_node = 
+						new MCTSNode<TGame>(m_root, MovePrior<TGame>{m, 0}, new TGame(m_root_game));
+					new_node->m_game->move(m);
+					m_root->m_children.emplace_back(new_node);
+				}
 			}
 		}
 	private:
