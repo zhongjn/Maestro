@@ -149,7 +149,7 @@ namespace Maestro {
                     }
                     else if (!current->evaluated) {
 
-                        current->eval = make_unique<Evaluation<TGame>>(_evaluator->evaluate(game.get_obsv(game.get_player())));
+                        current->eval = make_unique<Evaluation<TGame>>(_evaluator->evaluate(game));
                         current->evaluated = true;
                         float value = current->eval->v;
                         backup_v = value;
