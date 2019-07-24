@@ -21,6 +21,7 @@ set(src_tests
     test/test
     test/01_lazy
     test/02_gomoku
+    test/03_expirable
 )
 
 add_executable (Main ${src_common} ${src_main})
