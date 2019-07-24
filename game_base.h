@@ -18,8 +18,8 @@ namespace Maestro {
 
     // µ±Ç°×´Ì¬
     struct Status {
-        bool end;
-        Player winner;
+        bool end = false;
+        Player winner = Player::None;
     };
 
 

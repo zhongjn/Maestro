@@ -16,12 +16,9 @@ namespace Maestro {
         int row, col;
     };
 
-
-
-
     class Gomoku : public IGame<Gomoku> {
 
-        Player _player;
+        Player _player = Player::A;
         Status _status;
 
         class HalfBoard;
@@ -93,7 +90,7 @@ namespace Maestro {
             _status.end = true;
             _status.winner = Player::None;
         }
-    
+
     public:
         class HalfBoard {
             std::bitset<256> _stones = 0;
@@ -122,6 +119,8 @@ namespace Maestro {
         } black, white;
 
         void move(Move<Gomoku> mov) {
+            assert(!_status.end);
+
             // TODO
             // 此处暂时假设A是黑，B是白
             // 在交换规则下，该假设不成立
@@ -141,5 +140,22 @@ namespace Maestro {
         Player get_player() const { return _player; }
         Status get_status() const { return _status; }
         size_t get_hash() const { return black.get_hash() ^ white.get_hash(); }
+        vector<Move<Gomoku>> get_all_legal_moves() const {
+            vector<Move<Gomoku>> moves;
+            for (int r = 0; r < BOARD_SIZE; r++) {
+                for (int c = 0; c < BOARD_SIZE; c++) {
+                    if (!black.get(r, c) && !white.get(r, c)) {
+                        moves.push_back(Move<Gomoku>{r, c});
+                    }
+                }
+            }
+            return moves;
+        }
+        bool could_transfer_to(const Gomoku& another) const {
+            return true;
+        }
+        bool operator==(const Gomoku& another) const {
+            return black == another.black && white == another.white;
+        }
     };
 }
