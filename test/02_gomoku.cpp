@@ -1,5 +1,5 @@
 #include "test.h"
-#include "../game_gomoku.h"
+#include "../game/game_gomoku.h"
 
 using namespace Maestro;
 

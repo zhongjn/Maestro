@@ -1,7 +1,7 @@
 #pragma once
-#include "util/lazy.h"
-#include "util/expirable.h"
-#include "util/random.h"
+#include "../util/lazy.h"
+#include "../util/expirable.h"
+#include "../util/random.h"
 #include "search_base.h"
 #include <unordered_map>
 #include <stack>

@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
-#include "game_base.h"
+#include "../game/game_base.h"
 #include <cassert>
 #include <random>
 namespace Maestro {
