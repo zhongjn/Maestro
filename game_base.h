@@ -1,19 +1,25 @@
 #pragma once
 #include <vector>
+#include <cassert>
 
 namespace Maestro {
     using namespace std;
 
-    enum class Player {
+    enum class Player : int {
         None = 0,
         A = 1,
         B = 2
     };
 
+    inline Player another_player(Player player) {
+        assert(player != Player::None);
+        return Player(3 - int(player));
+    }
+
     // µ±Ç°×´Ì¬
     struct Status {
-        bool end;
-        Player winner;
+        bool end = false;
+        Player winner = Player::None;
     };
 
 
@@ -33,7 +39,7 @@ namespace Maestro {
     public:
         // using TMov = _TMov;
         virtual void move(Move<TGame> mov) = 0;
-        virtual Observation<TGame> get_obsv(Player pov) const = 0;
+        // virtual Observation<TGame> get_obsv(Player pov) const = 0;
         virtual Player get_player() const = 0;
         virtual Status get_status() const = 0;
         virtual size_t get_hash() const = 0;
@@ -58,16 +64,11 @@ namespace Maestro {
     template<typename TGame>
     class IEvaluator {
     public:
-        virtual Evaluation<TGame> evaluate(const Observation<TGame>& obsv) = 0;
+        virtual Evaluation<TGame> evaluate(const TGame& game) = 0;
     };
 
     // Sample here
     class SampleGame;
-
-    template<>
-    struct Observation<SampleGame> {
-
-    };
 
     template<>
     struct Move<SampleGame> {
@@ -77,7 +78,7 @@ namespace Maestro {
     class SampleGame final : public IGame<SampleGame> {
     public:
         void move(Move<SampleGame> mov) {}
-        Observation<SampleGame> get_obsv(Player pov) const { return Observation<SampleGame>(); }
+        // Observation<SampleGame> get_obsv(Player pov) const { return Observation<SampleGame>(); }
         Player get_player() const { return Player::None; }
         Status get_status() const { return Status(); }
         size_t get_hash() const { return 0; }
@@ -89,7 +90,7 @@ namespace Maestro {
 
     class SampleGameEvaluator final : public IEvaluator<SampleGame> {
     public:
-        Evaluation<SampleGame> evaluate(const Observation<SampleGame>& obsv) {
+        Evaluation<SampleGame> evaluate(const SampleGame& game) {
             return Evaluation<SampleGame>();
         }
     };
