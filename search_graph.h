@@ -1,6 +1,7 @@
 #pragma once
 #include "util/lazy.h"
 #include "util/expirable.h"
+#include "util/random.h"
 #include "search_base.h"
 #include <unordered_map>
 #include <stack>
@@ -39,8 +40,11 @@ namespace Maestro {
             Expirable<int> child_visited;
 
             float convert_v(Color color, float v) const {
-                // TODO: swap
                 return color == game.get_color() ? v : -v;
+            }
+
+            float convert_v(State* state) const {
+                return convert_v(state->game.get_color(), state->v);
             }
 
             State(Transposition* tt, TGame game) : game(game) {
@@ -58,23 +62,11 @@ namespace Maestro {
         struct Action : public enable_shared_from_this<Action> {
             Move<TGame> move;
             int visit = 0;
-            float p;
+            float p = 0;
             weak_ptr<State> parent_state;
             Lazy<shared_ptr<State>> child_state;
 
-            float get_ucb() const {
-                shared_ptr<State> ps = parent_state.lock();
-                assert(ps);
-                float u = 0;
-                if (child_state.initialized()) {
-                    u += ps->convert_v(child_state->v);
-                }
-
-                u += PUCT * p * sqrtf(ps->ns) / (1 + visit);
-                return u;
-            }
-
-            Action(Transposition * tt, Move<TGame> move, weak_ptr<State> parent, float p) : move(move), parent_state(parent), p(p) {
+            Action(Transposition* tt, Move<TGame> move, weak_ptr<State> parent, float p) : move(move), parent_state(parent), p(p) {
                 child_state = [this, tt]() {
                     shared_ptr<State> parent = parent_state.lock();
                     assert(parent);
@@ -107,10 +99,16 @@ namespace Maestro {
         vector<State*> _backup_stack;
 
         float action_ucb(State* parent, Action* action) {
-
+            float u = 0;
+            if (action->child_state.initialized()) {
+                u += parent->convert_v(action->child_state.value().get());
+            }
+            u += Random::value_f() * 1E-3;
+            u += PUCT * action->p * sqrtf(parent->ns) / (1 + action->visit);
+            return u;
         }
 
-        void backup_dv(State* origin) {
+        void backup_dv(State * origin) {
             _backup_stack.clear();
             _backup_stack.push_back(origin);
             while (!_backup_stack.empty()) {
@@ -152,12 +150,12 @@ namespace Maestro {
                 _timestamp++;
                 _sim_stack.clear();
 
-                shared_ptr<State> current = _root;
+                State* current = _root.get();
                 float backup_v = 0;
                 bool use_transposition = false;
 
                 while (true) {
-                    _sim_stack.push_back(current.get());
+                    _sim_stack.push_back(current);
                     //current->visit++;
 
                     auto& game = current->game;
@@ -181,10 +179,15 @@ namespace Maestro {
                     }
 
                     vector<shared_ptr<Action>>& actions = current->child_actions.value();
-                    // TODO @zjn: select action
-                    shared_ptr<Action> action;
+                    Action* action = nullptr;
+                    float max_ucb = -100000;
+                    for (auto& ac : actions) {
+                        float ucb = action_ucb(current, ac.get());
+                        if (ucb > max_ucb) action = ac.get();
+                    }
 
-                    shared_ptr<State> next = action->child_state.value();
+
+                    State* next = action->child_state.value().get();
                     int ns_before = next->ns;
                     action->visit++;
                     int ns_after = next->ns = max(next->ns, action->visit);
