@@ -17,7 +17,7 @@ namespace Maestro {
         };
         virtual void simulate(int k) = 0;
         virtual vector<MoveVisit> get_moves() const = 0;
-        virtual float get_value(Player player) const = 0;
+        virtual float get_value(Color color) const = 0;
         virtual TGame get_game_snapshot() const = 0;
         virtual void move(Move<TGame> move) = 0;
         void move_best() {

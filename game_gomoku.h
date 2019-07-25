@@ -18,7 +18,7 @@ namespace Maestro {
 
     class Gomoku : public IGame<Gomoku> {
 
-        Player _player = Player::A;
+        Color _color = Color::A;
         Status _status;
 
         class HalfBoard;
@@ -60,14 +60,14 @@ namespace Maestro {
         void check_status() {
             for (int cc = 0; cc <= 1; cc++) {
                 const HalfBoard& hb = cc == 0 ? black : white;
-                Player cur_player = cc == 0 ? Player::A : Player::B;
+                Color cur_color = cc == 0 ? Color::A : Color::B;
 
                 if (check_dir(hb, 1, 1) ||
                     check_dir(hb, 1, -1) ||
                     check_dir(hb, 0, 1) ||
                     check_dir(hb, 1, 0)) {
                     _status.end = true;
-                    _status.winner = cur_player;
+                    _status.winner = cur_color;
                     return;
                 }
             }
@@ -77,7 +77,7 @@ namespace Maestro {
                     // if not filled
                     if (!black.get(r, c) || !white.get(r, c)) {
                         _status.end = false;
-                        _status.winner = Player::None;
+                        _status.winner = Color::None;
                         return;
                     }
                 }
@@ -85,7 +85,7 @@ namespace Maestro {
 
             // filled
             _status.end = true;
-            _status.winner = Player::None;
+            _status.winner = Color::None;
         }
 
     public:
@@ -117,20 +117,20 @@ namespace Maestro {
 
         void move(Move<Gomoku> mov) {
             assert(!_status.end);
-            if (_player == Player::A) {
+            if (_color == Color::A) {
                 assert(!black.get(mov));
                 black.set(mov, true);
             }
-            else if (_player == Player::B) {
+            else if (_color == Color::B) {
                 assert(!white.get(mov));
                 white.set(mov, true);
             }
-            _player = another_player(_player);
+            _color = another_color(_color);
 
             check_status();
         }
 
-        Player get_player() const { return _player; }
+        Color get_color() const { return _color; }
         Status get_status() const { return _status; }
         size_t get_hash() const { return black.get_hash() ^ white.get_hash(); }
         vector<Move<Gomoku>> get_all_legal_moves() const {

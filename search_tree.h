@@ -43,7 +43,7 @@ namespace Maestro {
 				Status s = m_game->get_status();
 				if (s.end) {
                     // TODO
-					// new_node->backup(new_node->m_game->get_player == s.winner ? 1 : -1);
+					// new_node->backup(new_node->m_game->get_color == s.winner ? 1 : -1);
 				} else {
                     // TODO
 					// new_node->backup(iter->m_v);
@@ -119,7 +119,7 @@ namespace Maestro {
 			return ret;
 		}
 
-		float get_value(Player player) const {
+		float get_value(Color color) const {
             // TODO @wsh: 如果玩家不同，取相反数
 			return m_root->m_Q;
 		}

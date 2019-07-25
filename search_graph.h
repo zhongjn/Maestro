@@ -38,9 +38,9 @@ namespace Maestro {
             Lazy<vector<shared_ptr<Action>>> child_actions;
             Expirable<int> child_visited;
 
-            float convert_v(Player player, float v) const {
+            float convert_v(Color color, float v) const {
                 // TODO: swap
-                return player == game.get_player() ? v : -v;
+                return color == game.get_color() ? v : -v;
             }
 
             State(Transposition* tt, TGame game) : game(game) {
@@ -127,10 +127,10 @@ namespace Maestro {
                     if (pa) {
                         shared_ptr<State> ps = pa->parent_state.lock();
                         assert(ps);
-                        Player cur_player = cur->game.get_player();
+                        Color cur_color = cur->game.get_color();
 
                         // 从子状态dv计算出当前dv，累加
-                        ps->dv(_timestamp) += (ps->convert_v(cur_player, cur_v_after) - ps->convert_v(cur_player, cur_v_before)) / ps->ns;
+                        ps->dv(_timestamp) += (ps->convert_v(cur_color, cur_v_after) - ps->convert_v(cur_color, cur_v_before)) / ps->ns;
 
                         ps->child_visited(_timestamp)++;
                         if (ps->child_visited(_timestamp) == ps->child_actions->size()) {
@@ -164,7 +164,7 @@ namespace Maestro {
                     Status stat = game.get_status();
 
                     if (stat.end) {
-                        backup_v = stat.winner != Player::None ? 1 : 0;
+                        backup_v = stat.winner != Color::None ? 1 : 0;
                         break;
                     }
                     else if (!current->evaluated) {
@@ -203,7 +203,7 @@ namespace Maestro {
                 for (int i = 0; i < _sim_stack.size() - 1; i++) {
                     State* cur = _sim_stack[i];
                     State* next = _sim_stack[i + 1];
-                    cur->dv(_timestamp) += (cur->convert_v(next->game.get_player(), next->v) - cur->v) / (cur->ns + 1);
+                    cur->dv(_timestamp) += (cur->convert_v(next->game.get_color(), next->v) - cur->v) / (cur->ns + 1);
                 }
 
                 backup_dv(leaf);
@@ -218,8 +218,8 @@ namespace Maestro {
             return mvs;
         }
 
-        virtual float get_value(Player player) const {
-            return  (_root->game.get_player() == player ? 1 : -1) * _root->v;
+        virtual float get_value(Color color) const {
+            return  (_root->game.get_color() == color ? 1 : -1) * _root->v;
         }
 
         virtual TGame get_game_snapshot() const {
