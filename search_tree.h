@@ -57,7 +57,7 @@ namespace Maestro {
 			if (!expanded()) {
 				Status s = m_game->get_status();
 				if (s.end) {
-					backup(m_game->get_player == s.winner ? 1 : -1);
+					backup(m_game->get_player() != s.winner ? 1 : -1);
 				} else {
 					backup(eval.v);
 					for (MovePrior<TGame>& p : eval.p) {
@@ -114,11 +114,11 @@ namespace Maestro {
 		void simulate(int k) {
 			for (int i = 0; i < k; ++i) {
 				MCTSNode<TGame>* pcur = m_root;
-				while (pcur->expanded() || !pcur->m_game->get_status().end) {
+				while (!pcur->m_game->get_status().end) {
 					if (!pcur->expanded()) {
-						pcur->expand(m_evaluator->evaluate(pcur->m_game->get_obsv(pcur->m_game->get_player())));
+						pcur->expand(m_evaluator->evaluate(*pcur->m_game));
 					}
-					pcur = pcur == m_root ? pcur->select_best(m_kucb) : pcur->select_best_with_diri(m_kucb, 0.25, 0.03);
+					pcur = pcur->select_best(m_kucb);
 				}
 			}
 		}
