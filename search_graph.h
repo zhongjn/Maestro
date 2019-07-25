@@ -89,14 +89,19 @@ namespace Maestro {
             }
         };
 
+
+
         shared_ptr<State> _root;
         // members
         Transposition _transposition;
         unique_ptr<IEvaluator<TGame>> _evaluator;
         int _timestamp = 0;
+        bool _dirichlet_noise;
 
         vector<State*> _sim_stack;
         vector<State*> _backup_stack;
+
+
 
         float action_ucb(State* parent, Action* action) {
             float u = 0;
@@ -139,9 +144,13 @@ namespace Maestro {
             }
         }
 
+        void apply_dirichlet_noise() {
+            // TODO
+        }
+
     public:
 
-        MonteCarloGraphSearch(unique_ptr<IEvaluator<TGame>> evaluator, TGame game) : _evaluator(std::move(evaluator)) {
+        MonteCarloGraphSearch(unique_ptr<IEvaluator<TGame>> evaluator, TGame game, bool dirichlet_noise = false) : _evaluator(std::move(evaluator)), _dirichlet_noise(dirichlet_noise) {
             _root = make_shared<State>(&_transposition, game);
         }
 
@@ -232,7 +241,12 @@ namespace Maestro {
             for (auto& ap : _root->child_actions.value()) {
                 if (ap->move == move) {
                     _root = ap->child_state.value();
+                    break;
                 }
+            }
+
+            if (_dirichlet_noise) {
+                apply_dirichlet_noise();
             }
 
             for (auto it = begin(_transposition); it != end(_transposition);)
