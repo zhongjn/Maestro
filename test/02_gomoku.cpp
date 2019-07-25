@@ -1,5 +1,5 @@
 #include "test.h"
-#include "../game_gomoku.h"
+#include "../game/game_gomoku.h"
 
 using namespace Maestro;
 
@@ -24,7 +24,7 @@ TEST_CASE(gomoku_simple1) {
     gomoku.move(M{ 5,1 });
     expect(gomoku.white.get(5, 1), "white");
 
-    expect(gomoku.get_player() == Player::A, "player");
+    expect(gomoku.get_color() == Color::A, "color");
     Status status1 = gomoku.get_status();
     expect(!status1.end, "should not end");
 
@@ -36,7 +36,7 @@ TEST_CASE(gomoku_simple1) {
 
     Status status2 = gomoku.get_status();
     expect(status2.end, "should end");
-    expect(status2.winner == Player::A, "A(black) should win");
+    expect(status2.winner == Color::A, "A(black) should win");
 
     cout << "hashN: " << gomoku.get_hash() << endl;
 }
@@ -50,7 +50,7 @@ TEST_CASE(gomoku_simple2) {
     gomoku.move(M{ 13,1 }); // black
     gomoku.move(M{ 5,1 }); // white
 
-    expect(gomoku.get_player() == Player::A, "player");
+    expect(gomoku.get_color() == Color::A, "color");
     Status status1 = gomoku.get_status();
     expect(!status1.end, "should not end");
 
@@ -62,5 +62,5 @@ TEST_CASE(gomoku_simple2) {
 
     Status status2 = gomoku.get_status();
     expect(status2.end, "should end");
-    expect(status2.winner == Player::A, "A(black) should win");
+    expect(status2.winner == Color::A, "A(black) should win");
 }

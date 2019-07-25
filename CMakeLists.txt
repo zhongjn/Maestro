@@ -4,13 +4,14 @@ set(src_common
     util/expirable
     util/lazy
     util/nullable
+    util/random
     util/spin_lock
-    game_base
-    game_gomoku
-    game_test
-    search_base
-    search_graph
-    search_tree
+    game/game_base
+    game/game_gomoku
+    game/game_test
+    search/search_base
+    search/search_graph
+    search/search_tree
 )
 
 set(src_main
@@ -21,6 +22,7 @@ set(src_tests
     test/test
     test/01_lazy
     test/02_gomoku
+    test/03_expirable
 )
 
 add_executable (Main ${src_common} ${src_main})
