@@ -166,7 +166,6 @@ namespace Maestro {
                         break;
                     }
                     else if (!current->evaluated) {
-
                         current->eval = make_unique<Evaluation<TGame>>(_evaluator->evaluate(game));
                         current->evaluated = true;
                         float value = current->eval->v;
@@ -200,13 +199,13 @@ namespace Maestro {
                 }
 
                 State* leaf = _sim_stack.back();
-                leaf->dv(_timestamp) += (backup_v - leaf->v) / (leaf->ns + 1);
+                leaf->dv(_timestamp) += (backup_v - leaf->v) / leaf->ns;
 
                 // 纠正路径上的v（由ns+1引起）
                 for (int i = 0; i < _sim_stack.size() - 1; i++) {
                     State* cur = _sim_stack[i];
                     State* next = _sim_stack[i + 1];
-                    cur->dv(_timestamp) += (cur->convert_v(next->game.get_color(), next->v) - cur->v) / (cur->ns + 1);
+                    cur->dv(_timestamp) += (cur->convert_v(next) - cur->v) / cur->ns;
                 }
 
                 backup_dv(leaf);
