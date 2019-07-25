@@ -17,80 +17,18 @@ namespace Maestro {
     };
 
     class Gomoku : public IGame<Gomoku> {
-
+        int _steps = 0;
         Color _color = Color::A;
         Status _status;
 
         class HalfBoard;
-        void set_check_interval(int d, int& start, int& end) {
-            if (d == 0) {
-                start = 0;
-                end = BOARD_SIZE - 1;
-            }
-            else if (d == -1) {
-                start = 4;
-                end = BOARD_SIZE - 1;
-            }
-            else if (d == 1) {
-                start = 0;
-                end = BOARD_SIZE - 5;
-            }
-            else {
-                assert(0);
-            }
-        }
-        bool check_dir(const HalfBoard& hb, int dr, int dc) {
-            int r_start, r_end, c_start, c_end;
-            set_check_interval(dr, r_start, r_end);
-            set_check_interval(dc, c_start, c_end);
-
-            for (int r = r_start; r <= r_end; r++) {
-                for (int c = c_start; c <= c_end; c++) {
-                    bool connect = true;
-                    for (int k = 0; k < 5; k++) {
-                        connect &= hb.get(r + k * dr, c + k * dc);
-                        if (!connect) break;
-                    }
-                    if (connect) connect = SIX_WIN || (!hb.safe_get(r - dr, c - dc) && !hb.safe_get(r + 5 * dr, c + 5 * dc));
-                    if (connect) return true;
-                }
-            }
-            return false;
-        }
-        void check_status() {
-            for (int cc = 0; cc <= 1; cc++) {
-                const HalfBoard& hb = cc == 0 ? black : white;
-                Color cur_color = cc == 0 ? Color::A : Color::B;
-
-                if (check_dir(hb, 1, 1) ||
-                    check_dir(hb, 1, -1) ||
-                    check_dir(hb, 0, 1) ||
-                    check_dir(hb, 1, 0)) {
-                    _status.end = true;
-                    _status.winner = cur_color;
-                    return;
-                }
-            }
-
-            for (int r = 0; r < BOARD_SIZE; r++) {
-                for (int c = 0; c < BOARD_SIZE; c++) {
-                    // if not filled
-                    if (!black.get(r, c) || !white.get(r, c)) {
-                        _status.end = false;
-                        _status.winner = Color::None;
-                        return;
-                    }
-                }
-            }
-
-            // filled
-            _status.end = true;
-            _status.winner = Color::None;
-        }
+        void set_check_interval(int d, int& start, int& end);
+        bool check_dir(const HalfBoard& hb, int dr, int dc);
+        void check_status();
 
     public:
         class HalfBoard {
-            std::bitset<256> _stones = 0;
+            bitset<256> _stones = 0;
             static int idx(uint8_t row, uint8_t col) {
                 assert(row < BOARD_SIZE);
                 assert(col < BOARD_SIZE);
@@ -113,9 +51,16 @@ namespace Maestro {
                 hash<decltype(_stones)> hash_fn;
                 return hash_fn(_stones);
             }
+            bool could_transfer_to(const HalfBoard& hb) const {
+                bitset<256> res = _stones;
+                res.flip();
+                res |= hb._stones;
+                return res.any();
+            }
         } black, white;
 
         void move(Move<Gomoku> mov) {
+            _steps++;
             assert(!_status.end);
             if (_color == Color::A) {
                 assert(!black.get(mov));
@@ -133,22 +78,11 @@ namespace Maestro {
         Color get_color() const { return _color; }
         Status get_status() const { return _status; }
         size_t get_hash() const { return black.get_hash() ^ white.get_hash(); }
-        vector<Move<Gomoku>> get_all_legal_moves() const {
-            vector<Move<Gomoku>> moves;
-            for (int r = 0; r < BOARD_SIZE; r++) {
-                for (int c = 0; c < BOARD_SIZE; c++) {
-                    if (!black.get(r, c) && !white.get(r, c)) {
-                        moves.push_back(Move<Gomoku>{r, c});
-                    }
-                }
-            }
-            return moves;
-        }
+        vector<Move<Gomoku>> get_all_legal_moves() const;
         bool could_transfer_to(const Gomoku& another) const {
-            return true;
+            if (_steps > another._steps) return false;
+            return black.could_transfer_to(another.black) && white.could_transfer_to(another.white);
         }
-        bool operator==(const Gomoku& another) const {
-            return black == another.black && white == another.white;
-        }
+        bool operator==(const Gomoku& another) const { return black == another.black && white == another.white; }
     };
 }
