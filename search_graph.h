@@ -9,6 +9,8 @@
 namespace Maestro {
     using namespace std;
 
+    const float PUCT = 2;
+
     template<typename TGame>
     class MonteCarloGraphSearch : public IMonteCarloSearch<TGame> {
 
@@ -46,7 +48,7 @@ namespace Maestro {
                     vector<shared_ptr<Action>> actions;
                     assert(eval);
                     for (auto& mp : eval->p) {
-                        actions.push_back(make_shared<Action>(tt, mp.move, weak_from_this()));
+                        actions.push_back(make_shared<Action>(tt, mp.move, weak_from_this(), mp.p));
                     }
                     return actions;
                 };
@@ -56,9 +58,23 @@ namespace Maestro {
         struct Action : public enable_shared_from_this<Action> {
             Move<TGame> move;
             int visit = 0;
+            float p;
             weak_ptr<State> parent_state;
             Lazy<shared_ptr<State>> child_state;
-            Action(Transposition* tt, Move<TGame> move, weak_ptr<State> parent) : move(move), parent_state(parent) {
+
+            float get_ucb() const {
+                shared_ptr<State> ps = parent_state.lock();
+                assert(ps);
+                float u = 0;
+                if (child_state.initialized()) {
+                    u += ps->convert_v(child_state->v);
+                }
+
+                u += PUCT * p * sqrtf(ps->ns) / (1 + visit);
+                return u;
+            }
+
+            Action(Transposition * tt, Move<TGame> move, weak_ptr<State> parent, float p) : move(move), parent_state(parent), p(p) {
                 child_state = [this, tt]() {
                     shared_ptr<State> parent = parent_state.lock();
                     assert(parent);
@@ -89,6 +105,10 @@ namespace Maestro {
 
         vector<State*> _sim_stack;
         vector<State*> _backup_stack;
+
+        float action_ucb(State* parent, Action* action) {
+
+        }
 
         void backup_dv(State* origin) {
             _backup_stack.clear();

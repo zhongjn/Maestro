@@ -59,9 +59,6 @@ namespace Maestro {
         }
         void check_status() {
             for (int cc = 0; cc <= 1; cc++) {
-                // TODO
-                // 此处暂时假设A是黑，B是白
-                // 在交换规则下，该假设不成立
                 const HalfBoard& hb = cc == 0 ? black : white;
                 Player cur_player = cc == 0 ? Player::A : Player::B;
 
@@ -120,10 +117,6 @@ namespace Maestro {
 
         void move(Move<Gomoku> mov) {
             assert(!_status.end);
-
-            // TODO
-            // 此处暂时假设A是黑，B是白
-            // 在交换规则下，该假设不成立
             if (_player == Player::A) {
                 assert(!black.get(mov));
                 black.set(mov, true);
