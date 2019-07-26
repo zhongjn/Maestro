@@ -4,7 +4,6 @@ set(src_common
     util/expirable
     util/lazy
     util/nullable
-    util/random
     util/spin_lock
     game/game_base
     game/game_gomoku

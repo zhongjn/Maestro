@@ -1,7 +1,6 @@
 #pragma once
 #include "../util/lazy.h"
 #include "../util/expirable.h"
-#include "../util/random.h"
 #include "search_base.h"
 #include <unordered_map>
 #include <stack>
@@ -104,11 +103,12 @@ namespace Maestro {
 
 
         float action_ucb(State* parent, Action* action) {
+            static uniform_real_distribution<float> dist(0, 1E-3);
             float u = 0;
             if (action->child_state.initialized()) {
                 u += parent->convert_v(action->child_state.value().get());
             }
-            u += Random::value_f() * 1E-3;
+            u += dist(_rnd_eng);
             u += PUCT * action->p * sqrtf(parent->ns) / (1 + action->visit);
             return u;
         }
