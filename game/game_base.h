@@ -5,21 +5,21 @@
 namespace Maestro {
     using namespace std;
 
-    enum class Player : int {
+    enum class Color : int {
         None = 0,
         A = 1,
         B = 2
     };
 
-    inline Player another_player(Player player) {
-        assert(player != Player::None);
-        return Player(3 - int(player));
+    inline Color another_color(Color color) {
+        assert(color != Color::None);
+        return Color(3 - int(color));
     }
 
     // µ±Ç°×´Ì¬
     struct Status {
         bool end = false;
-        Player winner = Player::None;
+        Color winner = Color::None;
     };
 
 
@@ -39,8 +39,8 @@ namespace Maestro {
     public:
         // using TMov = _TMov;
         virtual void move(Move<TGame> mov) = 0;
-        // virtual Observation<TGame> get_obsv(Player pov) const = 0;
-        virtual Player get_player() const = 0;
+        // virtual Observation<TGame> get_obsv(Color pov) const = 0;
+        virtual Color get_color() const = 0;
         virtual Status get_status() const = 0;
         virtual size_t get_hash() const = 0;
         virtual vector<Move<TGame>> get_all_legal_moves() const = 0;
@@ -78,8 +78,8 @@ namespace Maestro {
     class SampleGame final : public IGame<SampleGame> {
     public:
         void move(Move<SampleGame> mov) {}
-        // Observation<SampleGame> get_obsv(Player pov) const { return Observation<SampleGame>(); }
-        Player get_player() const { return Player::None; }
+        // Observation<SampleGame> get_obsv(Color pov) const { return Observation<SampleGame>(); }
+        Color get_color() const { return Color::None; }
         Status get_status() const { return Status(); }
         size_t get_hash() const { return 0; }
         bool could_transfer_to(const SampleGame& another) const { return true; }

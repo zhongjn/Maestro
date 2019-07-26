@@ -16,8 +16,10 @@ TEST_CASE(lazy_simple) {
     auto init = [&counter]() { counter++; return Test(2); };
     
     auto lazy = Lazy<Test>(init);
+    expect(!lazy.initialized(), "shouldn't init yet");
     expect(counter == 0, "shouldn't init yet");
     int a = lazy->get_a();
+    expect(lazy.initialized(), "should init yet");
     expect(counter == 1, "should init yet");
     expect(a == 2, "a value");
 }

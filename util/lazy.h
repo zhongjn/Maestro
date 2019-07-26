@@ -14,7 +14,7 @@ namespace Maestro {
         Lazy(function<T()> init_fn) noexcept : _init_fn(move(init_fn)) {}
         template<typename F>
         Lazy(F init_fn) : Lazy(function<T()>(init_fn)) {};
-
+        bool initialized() const { return !_t.null(); }
         T& value() {
             if (!_t) {
                 _t = _init_fn();
