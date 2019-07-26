@@ -36,7 +36,8 @@ namespace Maestro {
             //float visit = 0;
             vector<weak_ptr<Action>> parent_actions;
             Lazy<vector<shared_ptr<Action>>> child_actions;
-            Expirable<int> child_visited;
+            Expirable<int> backup_visited_child_count;
+            Expirable<int> backup_total_child_count;
 
             float convert_v(Color color, float v) const {
                 return color == game.get_color() ? v : -v;
@@ -114,6 +115,23 @@ namespace Maestro {
         }
 
         void backup_dv(State * origin) {
+            // 1. 计算子DAG各节点孩子数量
+            _backup_stack.clear();
+            _backup_stack.push_back(origin);
+            while (!_backup_stack.empty()) {
+                State* cur = _backup_stack.back();
+                _backup_stack.pop_back();
+                for (auto& wpa : cur->parent_actions) {
+                    if (shared_ptr<Action> pa = wpa.lock(); pa) {
+                        shared_ptr<State> ps = pa->parent_state.lock();
+                        assert(ps);
+                        ps->backup_total_child_count(_timestamp)++;
+                        _backup_stack.push_back(ps.get());
+                    }
+                }
+            }
+
+            // 2. 对子DAG按逆拓扑序遍历（即从最子节点开始），传播dv
             _backup_stack.clear();
             _backup_stack.push_back(origin);
             while (!_backup_stack.empty()) {
@@ -135,8 +153,8 @@ namespace Maestro {
                         // 从子状态dv计算出当前dv，累加
                         ps->dv(_timestamp) += (ps->convert_v(cur_color, cur_v_after) - ps->convert_v(cur_color, cur_v_before)) / ps->ns;
 
-                        ps->child_visited(_timestamp)++;
-                        if (ps->child_visited(_timestamp) == ps->child_actions->size()) {
+                        ps->backup_visited_child_count(_timestamp)++;
+                        if (ps->backup_visited_child_count(_timestamp) == ps->backup_total_child_count(_timestamp)) {
                             _backup_stack.push_back(ps.get());
                         }
                     }
