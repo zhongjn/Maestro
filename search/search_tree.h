@@ -57,7 +57,7 @@ namespace Maestro {
 			if (!expanded()) {
 				Status s = m_game->get_status();
 				if (s.end) {
-					backup(m_game->get_player() != s.winner ? 1 : -1);
+					backup(m_game->get_color() != s.winner ? 1 : -1);
 				} else {
 					backup(eval.v);
 					for (MovePrior<TGame>& p : eval.p) {
@@ -131,9 +131,9 @@ namespace Maestro {
 			return ret;
 		}
 
-		float get_value(Player player) const {
+		float get_value(Color color) const {
             // 如果玩家不同，取相反数
-			return m_root_game.get_player() == player ? m_root->m_Q : -m_root->m_Q;
+			return m_root_game.get_color() == color ? m_root->m_Q : -m_root->m_Q;
 		}
 
 		TGame get_game_snapshot() const {
