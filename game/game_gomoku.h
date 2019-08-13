@@ -77,7 +77,7 @@ namespace Maestro {
 
         Color get_color() const override { return _color; }
         Status get_status() const override { return _status; }
-        size_t get_hash() const override { return black.get_hash() ^ white.get_hash(); }
+        size_t get_hash() const override { return hash<int>()(_steps) ^ black.get_hash() ^ white.get_hash(); }
 
         bool is_legal_move(Move<Gomoku> m) const override {
             assert(!_status.end);
@@ -101,6 +101,6 @@ namespace Maestro {
             return black.could_transfer_to(another.black) && white.could_transfer_to(another.white);
         }
 
-        bool operator==(const Gomoku & another) const override { return black == another.black && white == another.white; }
+        bool operator==(const Gomoku & another) const override { return _steps == another._steps && black == another.black && white == another.white; }
     };
 }
