@@ -41,7 +41,7 @@ namespace Maestro {
 			float max;
 			for (int i = 0; i < m_children.size(); ++i) {
                 // ²ÎÊý: epsilon
-				float ucb = m_children[i]->cal_UCB(kucb, noise[i]£¬ 0.25);
+				float ucb = m_children[i]->cal_UCB(kucb, noise[i], 0.25);
 				if (ret == nullptr) {
 					max = ucb;
 					ret = m_children[i];
@@ -171,7 +171,7 @@ namespace Maestro {
 	private:
         // Fully expand root and generate dirichlet noise
         void root_expand2() {
-            vector<Move<TGame>> moves = m_root_game->get_all_legal_moves();
+            vector<Move<TGame>> moves = m_root_game.get_all_legal_moves();
             int children_size = m_root->m_children.size();
 
             for (Move<TGame>& m : moves) {
