@@ -33,7 +33,6 @@ namespace Maestro {
         }
     };
 
-    template<>
     class GomokuConsolePlayer final : public IPlayer<Gomoku> {
     public:
         virtual Move<Gomoku> get_move(const Gomoku& game) {
