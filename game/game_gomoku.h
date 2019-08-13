@@ -51,7 +51,7 @@ namespace Maestro {
                 hash<decltype(_stones)> hash_fn;
                 return hash_fn(_stones);
             }
-            bool could_transfer_to(const HalfBoard& hb) const {
+            bool could_transfer_to(const HalfBoard & hb) const {
                 bitset<256> res = _stones;
                 res.flip();
                 res |= hb._stones;
@@ -59,15 +59,15 @@ namespace Maestro {
             }
         } black, white;
 
-        void move(Move<Gomoku> mov) {
+        void move(Move<Gomoku> mov) override {
             _steps++;
             assert(!_status.end);
+            assert(is_legal_move(mov));
+            assert(!black.get(mov) && !white.get(mov));
             if (_color == Color::A) {
-                assert(!black.get(mov));
                 black.set(mov, true);
             }
             else if (_color == Color::B) {
-                assert(!white.get(mov));
                 white.set(mov, true);
             }
             _color = another_color(_color);
@@ -75,14 +75,32 @@ namespace Maestro {
             check_status();
         }
 
-        Color get_color() const { return _color; }
-        Status get_status() const { return _status; }
-        size_t get_hash() const { return black.get_hash() ^ white.get_hash(); }
-        vector<Move<Gomoku>> get_all_legal_moves() const;
-        bool could_transfer_to(const Gomoku& another) const {
+        Color get_color() const override { return _color; }
+        Status get_status() const override { return _status; }
+        size_t get_hash() const override { return black.get_hash() ^ white.get_hash(); }
+
+        bool is_legal_move(Move<Gomoku> m) const override {
+            assert(!_status.end);
+            if (m.col < 0 || m.col >= BOARD_SIZE || m.row < 0 || m.row >= BOARD_SIZE) return false;
+            return (!black.get(m) && !white.get(m));
+        }
+
+        vector<Move<Gomoku>> get_all_legal_moves() const override {
+            vector<Move<Gomoku>> ms;
+            for (int r = 0; r < BOARD_SIZE; r++) {
+                for (int c = 0; c < BOARD_SIZE; c++) {
+                    Move<Gomoku> m{ r,c };
+                    if (is_legal_move(m)) ms.push_back(m);
+                }
+            }
+            return ms;
+        }
+
+        bool could_transfer_to(const Gomoku & another) const override {
             if (_steps > another._steps) return false;
             return black.could_transfer_to(another.black) && white.could_transfer_to(another.white);
         }
-        bool operator==(const Gomoku& another) const { return black == another.black && white == another.white; }
+
+        bool operator==(const Gomoku & another) const override { return black == another.black && white == another.white; }
     };
 }

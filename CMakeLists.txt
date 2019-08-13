@@ -8,6 +8,8 @@ set(src_common
     game/game_base
     game/game_gomoku
     game/game_test
+    play/player
+    play/stage
     search/search_base
     search/search_graph
     search/search_tree
