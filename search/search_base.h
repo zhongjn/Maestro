@@ -29,6 +29,43 @@ namespace Maestro {
         virtual TGame get_game_snapshot() const = 0;
         virtual void move(Move<TGame> move) = 0;
 
+        Move<TGame> pick_move(float temp) {
+            assert(temp >= 0.0f);
+
+            if (temp == 0.0f) {
+                auto moves = get_moves();
+                int max_visit = -1;
+                Move<TGame> max_move;
+                assert(moves.size() > 0);
+                for (auto& m : moves) {
+                    if (m.visit_count > max_visit) {
+                        max_move = m.move;
+                    }
+                }
+                return max_move;
+            }
+            else {
+                assert(temp >= 0.0f);
+                uniform_real_distribution<float> dist;
+                float r = dist(_rnd_eng);
+
+                auto moves = get_moves_prob(temp);
+                assert(moves.size() > 0);
+
+                float accum = 0;
+                int index = 0;
+                for (auto& move : moves) {
+                    accum += move.p;
+                    if (accum > r) {
+                        break;
+                    }
+                    index++;
+                }
+
+                return moves[index].move;
+            }
+        }
+
         void move_best() {
             auto moves = get_moves();
             int max_visit = -1;
@@ -39,6 +76,8 @@ namespace Maestro {
                     max_move = m.move;
                 }
             }
+
+            move(max_move);
         }
 
         vector<MoveVisitProb> get_moves_prob(float temp) const {

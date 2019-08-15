@@ -5,11 +5,13 @@ set(src_common
     util/expirable
     util/lazy
     util/nullable
-    util/random
     util/spin_lock
     game/game_base
     game/game_gomoku
     game/game_test
+    play/player
+    play/match
+    play/round
     search/search_base
     search/search_graph
     search/search_tree

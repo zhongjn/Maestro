@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cassert>
+#include <string>
 
 namespace Maestro {
     using namespace std;
@@ -22,12 +23,6 @@ namespace Maestro {
         Color winner = Color::None;
     };
 
-
-    template<typename TGame>
-    struct Observation {
-
-    };
-
     template<typename TGame>
     struct Move {
         bool operator==(const TGame& another) const { return false; }
@@ -39,13 +34,14 @@ namespace Maestro {
     public:
         // using TMov = _TMov;
         virtual void move(Move<TGame> mov) = 0;
-        // virtual Observation<TGame> get_obsv(Color pov) const = 0;
         virtual Color get_color() const = 0;
         virtual Status get_status() const = 0;
         virtual size_t get_hash() const = 0;
+        virtual bool is_legal_move(Move<TGame> m) const = 0;
         virtual vector<Move<TGame>> get_all_legal_moves() const = 0;
         virtual bool could_transfer_to(const TGame& another) const = 0;
         virtual bool operator==(const TGame& another) const = 0;
+        virtual string to_string() const { return "not implemented"; }
     };
 
     template<typename TGame>
@@ -59,6 +55,17 @@ namespace Maestro {
     struct Evaluation {
         std::vector<MovePrior<TGame>> p;
         float v;
+        void take_top(int k) {
+            if (p.size() > k) {
+                struct MoveCompare {
+                    bool cmp(const MovePrior<TGame>& m1, const MovePrior<TGame>& m2) {
+                        return m1.p > m2.p;
+                    }
+                };
+                sort(p.begin(), p.end(), MoveCompare());
+                p.resize(k);
+            }
+        }
     };
 
     template<typename TGame>
@@ -77,14 +84,14 @@ namespace Maestro {
 
     class SampleGame final : public IGame<SampleGame> {
     public:
-        void move(Move<SampleGame> mov) {}
-        // Observation<SampleGame> get_obsv(Color pov) const { return Observation<SampleGame>(); }
-        Color get_color() const { return Color::None; }
-        Status get_status() const { return Status(); }
-        size_t get_hash() const { return 0; }
-        bool could_transfer_to(const SampleGame& another) const { return true; }
-        vector<Move<SampleGame>> get_all_legal_moves() const { return vector<Move<SampleGame>>(); }
-        bool operator==(const SampleGame& another) const { return true; }
+        void move(Move<SampleGame> mov) override {}
+        Color get_color() const override { return Color::None; }
+        Status get_status() const override { return Status(); }
+        size_t get_hash() const override { return 0; }
+        bool could_transfer_to(const SampleGame& another) const override { return true; }
+        bool is_legal_move(Move<SampleGame> m) const override { return false; }
+        vector<Move<SampleGame>> get_all_legal_moves() const override { return vector<Move<SampleGame>>(); }
+        bool operator==(const SampleGame& another) const override { return true; }
         SampleGame() = default;
     };
 

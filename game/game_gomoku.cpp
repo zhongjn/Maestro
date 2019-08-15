@@ -69,15 +69,3 @@ void Maestro::Gomoku::check_status() {
     _status.end = true;
     _status.winner = Color::None;
 }
-
-vector<Move<Gomoku>> Maestro::Gomoku::get_all_legal_moves() const {
-    vector<Move<Gomoku>> moves;
-    for (int r = 0; r < BOARD_SIZE; r++) {
-        for (int c = 0; c < BOARD_SIZE; c++) {
-            if (!black.get(r, c) && !white.get(r, c)) {
-                moves.push_back(Move<Gomoku>{r, c});
-            }
-        }
-    }
-    return moves;
-}
