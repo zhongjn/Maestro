@@ -71,6 +71,8 @@ namespace Maestro {
     template<typename TGame>
     class IEvaluator {
     public:
+        // 注意：
+        // 评估出来的v，是站在game的当前方的视角看的（即将落子的那一方）
         virtual Evaluation<TGame> evaluate(const TGame& game) = 0;
     };
 

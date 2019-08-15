@@ -39,6 +39,7 @@ namespace Maestro {
                 assert(moves.size() > 0);
                 for (auto& m : moves) {
                     if (m.visit_count > max_visit) {
+                        max_visit = m.visit_count;
                         max_move = m.move;
                     }
                 }

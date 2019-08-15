@@ -152,7 +152,7 @@ namespace Maestro {
                     line2[row_size - 1] = ']';
                 }
 
-                out << line2 << " " << (char)('1' + i) << endl;
+                out << line2 << " " << i + 1 << endl;
                 out << line << endl;
             }
 

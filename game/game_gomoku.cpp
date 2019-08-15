@@ -57,7 +57,7 @@ void Maestro::Gomoku::check_status() {
     for (int r = 0; r < BOARD_SIZE; r++) {
         for (int c = 0; c < BOARD_SIZE; c++) {
             // if not filled
-            if (!black.get(r, c) || !white.get(r, c)) {
+            if (!black.get(r, c) && !white.get(r, c)) {
                 _status.end = false;
                 _status.winner = Color::None;
                 return;
