@@ -7,7 +7,7 @@
 namespace Maestro {
     using namespace std;
 
-    const int BOARD_SIZE = 5;
+    const int BOARD_SIZE = 15;
     const bool SIX_WIN = false;
 
     class Gomoku;
