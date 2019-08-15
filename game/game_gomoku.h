@@ -2,6 +2,7 @@
 #include "game_base.h"
 #include <cassert>
 #include <bitset>
+#include <sstream>
 
 namespace Maestro {
     using namespace std;
@@ -14,12 +15,14 @@ namespace Maestro {
     template<>
     struct Move<Gomoku> {
         int row, col;
+        bool operator==(Move<Gomoku> another) const { return row == another.row && col == another.col; }
     };
 
     class Gomoku : public IGame<Gomoku> {
         int _steps = 0;
         Color _color = Color::A;
         Status _status;
+        Move<Gomoku> _last_move;
 
         class HalfBoard;
         void set_check_interval(int d, int& start, int& end);
@@ -35,7 +38,7 @@ namespace Maestro {
                 return (row << 4) | col;
             }
         public:
-            bool operator==(const HalfBoard & bb) const { return _stones == bb._stones; }
+            bool operator==(const HalfBoard & bb) const { return (_stones ^ bb._stones).none(); }
             bool get(uint8_t row, uint8_t col) const { return _stones[idx(row, col)]; }
             bool get(Move<Gomoku> mov) const { return get(mov.row, mov.col); }
             bool safe_get(int8_t row, int8_t col) const {
@@ -60,10 +63,12 @@ namespace Maestro {
         } black, white;
 
         void move(Move<Gomoku> mov) override {
+            if (!is_legal_move(mov)) throw logic_error("not a legal move");
             _steps++;
             assert(!_status.end);
             assert(is_legal_move(mov));
-            assert(!black.get(mov) && !white.get(mov));
+            _last_move = mov;
+
             if (_color == Color::A) {
                 black.set(mov, true);
             }
@@ -102,5 +107,62 @@ namespace Maestro {
         }
 
         bool operator==(const Gomoku & another) const override { return _steps == another._steps && black == another.black && white == another.white; }
+
+        string to_string() const {
+            ostringstream out;
+            out << "step " << _steps << endl;
+            const int cell_size = 3;
+            const int row_size = (cell_size + 1) * BOARD_SIZE + 1;
+            char line[row_size + 1];
+            char line2[row_size + 1];
+            for (int i = 0; i < row_size; i++) {
+                if (i % (cell_size + 1) == 0)
+                    line[i] = '+';
+                else
+                    line[i] = '-';
+
+                line2[i] = ' ';
+            }
+            line[row_size] = 0;
+            line2[row_size] = 0;
+            out << line << endl;
+            for (int i = 0; i < BOARD_SIZE; i++) {
+                // char row[row_size];  // '  O  '
+                for (int j = 0; j < BOARD_SIZE; j++) {
+                    line2[j * (cell_size + 1)] = '|';
+                    if (_last_move.row == i) {
+                        if (_last_move.col == j) {
+                            line2[j * (cell_size + 1)] = '[';
+                        }
+                        else if (_last_move.col == j - 1) {
+                            line2[j * (cell_size + 1)] = ']';
+                        }
+                    }
+
+                    int st = j * (cell_size + 1) + cell_size / 2 + 1;
+                    if (black.get(i, j))
+                        line2[st] = '#';
+                    else if (white.get(i, j))
+                        line2[st] = 'O';
+                    else
+                        line2[st] = ' ';
+                }
+                line2[row_size - 1] = '|';
+                if (_last_move.row == i && _last_move.col == BOARD_SIZE - 1) {
+                    line2[row_size - 1] = ']';
+                }
+
+                out << line2 << " " << (char)('1' + i) << endl;
+                out << line << endl;
+            }
+
+            char column_no[row_size] = { 0 };
+            int offset = 0;
+            for (int i = 0; i < BOARD_SIZE; i++) {
+                offset += sprintf_s(column_no + offset, row_size - offset, "  %-2c", char('A' + i));
+            }
+            out << column_no;
+            return out.str();
+        }
     };
 }

@@ -49,7 +49,7 @@ namespace Maestro {
                 uniform_real_distribution<float> dist;
                 float r = dist(_rnd_eng);
 
-                auto moves = get_moves_prob();
+                auto moves = get_moves_prob(temp);
                 assert(moves.size() > 0);
 
                 float accum = 0;

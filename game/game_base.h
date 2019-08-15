@@ -55,6 +55,17 @@ namespace Maestro {
     struct Evaluation {
         std::vector<MovePrior<TGame>> p;
         float v;
+        void take_top(int k) {
+            if (p.size() > k) {
+                struct MoveCompare {
+                    bool cmp(const MovePrior<TGame>& m1, const MovePrior<TGame>& m2) {
+                        return m1.p > m2.p;
+                    }
+                };
+                sort(p.begin(), p.end(), MoveCompare());
+                p.resize(k);
+            }
+        }
     };
 
     template<typename TGame>
