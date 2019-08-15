@@ -94,14 +94,15 @@ namespace Maestro {
         shared_ptr<State> _root;
         // members
         Transposition _transposition;
-        unique_ptr<IEvaluator<TGame>> _evaluator;
+        shared_ptr<IEvaluator<TGame>> _evaluator;
         int _timestamp = 0;
         bool _dirichlet_noise;
 
         vector<State*> _sim_stack;
         vector<State*> _backup_stack;
 
-
+        int _sim_total = 0;
+        int _sim_saved = 0;
 
         float action_ucb(State* parent, Action* action) {
             static uniform_real_distribution<float> dist(0, 1E-3);
@@ -168,16 +169,23 @@ namespace Maestro {
 
     public:
 
-        MonteCarloGraphSearch(unique_ptr<IEvaluator<TGame>> evaluator, TGame game, bool dirichlet_noise = false) : _evaluator(std::move(evaluator)), _dirichlet_noise(dirichlet_noise) {
+        MonteCarloGraphSearch(shared_ptr<IEvaluator<TGame>> evaluator, TGame game, bool dirichlet_noise = false) : _evaluator(std::move(evaluator)), _dirichlet_noise(dirichlet_noise) {
             _root = make_shared<State>(&_transposition, game);
+        }
+
+        float save_ratio() const {
+            return float(_sim_saved) / _sim_total;
         }
 
         virtual void simulate(int k) {
             for (int i = 0; i < k; i++) {
+                _sim_total++;
                 _timestamp++;
                 _sim_stack.clear();
 
+                _root->ns++;
                 State* current = _root.get();
+
                 float backup_v = 0;
                 bool use_transposition = false;
 
@@ -189,7 +197,15 @@ namespace Maestro {
                     Status stat = game.get_status();
 
                     if (stat.end) {
-                        backup_v = stat.winner != Color::None ? 1 : 0;
+                        if (stat.winner == game.get_color()) {
+                            backup_v = 1;
+                        }
+                        else if (stat.winner == Color::None) {
+                            backup_v = 0;
+                        }
+                        else {
+                            backup_v = -1;
+                        }
                         break;
                     }
                     else if (!current->evaluated) {
@@ -209,7 +225,10 @@ namespace Maestro {
                     float max_ucb = -100000;
                     for (auto& ac : actions) {
                         float ucb = action_ucb(current, ac.get());
-                        if (ucb > max_ucb) action = ac.get();
+                        if (ucb > max_ucb) {
+                            max_ucb = ucb;
+                            action = ac.get();
+                        }
                     }
 
 
@@ -219,6 +238,7 @@ namespace Maestro {
                     int ns_after = next->ns = max(next->ns, action->visit);
 
                     if (ns_before == ns_after) {
+                        _sim_saved++;
                         use_transposition = true;
                     }
 
@@ -256,12 +276,9 @@ namespace Maestro {
         }
 
         virtual void move(Move<TGame> move) {
-            for (auto& ap : _root->child_actions.value()) {
-                if (ap->move == move) {
-                    _root = ap->child_state.value();
-                    break;
-                }
-            }
+            TGame g = _root->game;
+            g.move(move);
+            _root = make_shared<State>(&_transposition, g);
 
             if (_dirichlet_noise) {
                 apply_dirichlet_noise();
