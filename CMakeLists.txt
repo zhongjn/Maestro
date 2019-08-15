@@ -35,6 +35,7 @@ set(targets
     Main
     TestEntry
 )
+set_target_properties(Main PROPERTIES LINK_FLAGS "/PROFILE")
 
 foreach(tg ${targets})
     set_property(TARGET ${tg} PROPERTY CXX_STANDARD 17)

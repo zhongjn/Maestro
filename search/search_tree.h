@@ -10,6 +10,7 @@ namespace Maestro {
 			m_move = m;
 			m_game = g;
 			m_N = m_Q = m_W = 0;
+            m_expanded = false;
 		}
 
 		~MCTSNode() {
@@ -54,7 +55,7 @@ namespace Maestro {
 		}
 
 		void expand(Evaluation<TGame>&& eval) {
-			if (!expanded()) {
+			if (!m_expanded) {
 				Status s = m_game->get_status();
 				if (s.end) {
 					backup(m_game->get_color() != s.winner ? 1 : -1);
@@ -66,18 +67,13 @@ namespace Maestro {
 						new_node->m_game->move(p.move);
 					}
 				}
-				delete m_game;
-				m_game = nullptr;
+                m_expanded = true;
 			}
 		}
 
 		inline float cal_UCB(float k, float eta = 0, float epsilon = 0) {
 			return m_Q + ((1 - epsilon) * m_move.p + epsilon * eta) 
 				* k * sqrt(m_parent->m_N) / (1 + m_N);
-		}
-
-		inline bool expanded() {
-			return m_game == nullptr;
 		}
 
 		void backup(float v) {
@@ -99,6 +95,7 @@ namespace Maestro {
 		int m_N;									// visit cnt
 		float m_Q;									// action value Q
 		float m_W;									// sum of V in subtree, used in calculating Q
+        bool m_expanded;
 	};
 
 	template<typename TGame>
@@ -107,11 +104,10 @@ namespace Maestro {
         // 参数: kucb
 		MonteCarloTreeSearch(TGame* init, float kucb, IEvaluator<TGame>* evaluator) {
 			m_root = new MCTSNode<TGame>(nullptr, MovePrior<TGame>(), init);
-			m_root_game = TGame(*init);
 			m_kucb = kucb;
 			m_evaluator = evaluator;
             
-            m_root->expand(m_evaluator->evaluate(m_root_game));
+            m_root->expand(m_evaluator->evaluate(*(m_root->m_game)));
             root_expand2();
 		}
 
@@ -120,7 +116,7 @@ namespace Maestro {
 			for (int i = 0; i < k; ++i) {
 				MCTSNode<TGame>* pcur = m_root;
 				while (!pcur->m_game->get_status().end) {
-					if (!pcur->expanded()) {
+					if (!pcur->m_expanded) {
 						pcur->expand(m_evaluator->evaluate(*pcur->m_game));
 					}
                     if (pcur == m_root) {
@@ -142,11 +138,11 @@ namespace Maestro {
 
 		float get_value(Color color) const {
             // 如果玩家不同，取相反数
-			return m_root_game.get_color() == color ? m_root->m_Q : -m_root->m_Q;
+			return m_root->m_game->get_color() == color ? m_root->m_Q : -m_root->m_Q;
 		}
 
 		TGame get_game_snapshot() const {
-			return m_root_game;
+			return *(m_root->m_game);
 		}
 
 		void move(Move<TGame> move) {
@@ -159,9 +155,8 @@ namespace Maestro {
 			if (iter != m_root->m_children.end()) {
 				m_root = *iter;
 				m_root->m_parent->m_children.erase(iter);
-				delete* iter;
+				m_root->m_parent;
 				m_root->m_parent = nullptr;
-				m_root_game.move(move);
 			} else {
 				// move doesn't exist
 				throw;
@@ -171,7 +166,7 @@ namespace Maestro {
 	private:
         // Fully expand root and generate dirichlet noise
         void root_expand2() {
-            vector<Move<TGame>> moves = m_root_game.get_all_legal_moves();
+            vector<Move<TGame>> moves = m_root->m_game->get_all_legal_moves();
             int children_size = m_root->m_children.size();
 
             for (Move<TGame>& m : moves) {
@@ -184,7 +179,7 @@ namespace Maestro {
                 }
                 if (!found) {
                     MCTSNode<TGame>* new_node =
-                        new MCTSNode<TGame>(m_root, MovePrior<TGame>{m, 0}, new TGame(m_root_game));
+                        new MCTSNode<TGame>(m_root, MovePrior<TGame>{m, 0}, new TGame(*(m_root->m_game)));
                     new_node->m_game->move(m);
                     m_root->m_children.emplace_back(new_node);
                 }
@@ -210,7 +205,6 @@ namespace Maestro {
 
 		MCTSNode<TGame>* m_root;
 		IEvaluator<TGame>* m_evaluator;
-		TGame m_root_game;
 		float m_kucb;
         vector<float> m_noise;
 	};

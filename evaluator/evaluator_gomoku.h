@@ -59,7 +59,7 @@ namespace Maestro {
             for (int r = r_start; r <= r_end; r++) {
                 for (int c = c_start; c <= c_end; c++) {
                     bool connect = true;
-                    for (int k = 0; k < 6; k++) {
+                    for (int k = 0; k < 5; k++) {
                         connect &= hb.get(r + k * dr, c + k * dc);
                         if (!connect) {
                             max = max < k ? k : max;
