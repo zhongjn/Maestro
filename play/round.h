@@ -8,7 +8,7 @@ namespace Maestro {
         TGame _game;
         unique_ptr<IPlayer<TGame>> _pa, _pb;
     public:
-        Round(unique_ptr<IPlayer<TGame>> pa, unique_ptr<IPlayer<TGame>> pb) : _pa(std::move(pa)), _pb(std::move(pb)) {
+        Round(TGame game, unique_ptr<IPlayer<TGame>> pa, unique_ptr<IPlayer<TGame>> pb) : _game(game), _pa(std::move(pa)), _pb(std::move(pb)) {
 
         }
 
