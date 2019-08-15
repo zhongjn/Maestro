@@ -5,12 +5,12 @@ namespace Maestro {
 	template<typename TGame>
 	class MCTSNode {
 	public:
-		MCTSNode(MCTSNode<TGame>* p, MovePrior<TGame> m, TGame* g) {
+		MCTSNode(MCTSNode<TGame>* p, MovePrior<TGame> m) {
 			m_parent = p;
 			m_move = m;
-			m_game = g;
 			m_N = m_Q = m_W = 0;
             m_expanded = false;
+            m_game = nullptr;
 		}
 
 		~MCTSNode() {
@@ -19,6 +19,9 @@ namespace Maestro {
 					delete child;
 				}
 			}
+            if (m_game) {
+                delete m_game;
+            }
 		}
 
 		MCTSNode* select_best(float kucb) {
@@ -62,9 +65,8 @@ namespace Maestro {
 				} else {
 					backup(eval.v);
 					for (MovePrior<TGame>& p : eval.p) {
-						MCTSNode* new_node = new MCTSNode(this, p, new TGame(*m_game));
+						MCTSNode* new_node = new MCTSNode(this, p);
 						m_children.push_back(new_node);
-						new_node->m_game->move(p.move);
 					}
 				}
                 m_expanded = true;
@@ -103,7 +105,8 @@ namespace Maestro {
 	public:
         // ²ÎÊý: kucb
 		MonteCarloTreeSearch(TGame* init, float kucb, IEvaluator<TGame>* evaluator) {
-			m_root = new MCTSNode<TGame>(nullptr, MovePrior<TGame>(), init);
+			m_root = new MCTSNode<TGame>(nullptr, MovePrior<TGame>());
+            m_root->m_game = init;
 			m_kucb = kucb;
 			m_evaluator = evaluator;
             
@@ -124,6 +127,8 @@ namespace Maestro {
                     } else {
 					    pcur = pcur->select_best(m_kucb);
                     }
+                    pcur->m_game = new TGame(*(pcur->m_parent->m_game));
+                    pcur->m_game->move(pcur->m_move.move);
 				}
 			}
 		}
@@ -155,7 +160,11 @@ namespace Maestro {
 			if (iter != m_root->m_children.end()) {
 				m_root = *iter;
 				m_root->m_parent->m_children.erase(iter);
-				m_root->m_parent;
+                if (!m_root->m_game) {
+                    m_root->m_game = new TGame(*(m_root->m_parent->m_game));
+                    m_root->m_game->move(m_root->m_move.move);
+                }
+				delete m_root->m_parent;
 				m_root->m_parent = nullptr;
 			} else {
 				// move doesn't exist
@@ -179,8 +188,7 @@ namespace Maestro {
                 }
                 if (!found) {
                     MCTSNode<TGame>* new_node =
-                        new MCTSNode<TGame>(m_root, MovePrior<TGame>{m, 0}, new TGame(*(m_root->m_game)));
-                    new_node->m_game->move(m);
+                        new MCTSNode<TGame>(m_root, MovePrior<TGame>{m, 0});
                     m_root->m_children.emplace_back(new_node);
                 }
             }

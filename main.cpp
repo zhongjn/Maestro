@@ -13,12 +13,12 @@ int main() {
     auto pa = 
         make_unique<MonteCarloAIPlayer<Gomoku>>(
             cast_unique<IMonteCarloSearch<Gomoku>>(
-                make_unique<MonteCarloTreeSearch<Gomoku>>(new Gomoku(), 2, &eval)), 2);
+                make_unique<MonteCarloTreeSearch<Gomoku>>(new Gomoku(), 2, &eval)), 1000);
 
     auto pb = 
         make_unique<MonteCarloAIPlayer<Gomoku>>(
             cast_unique<IMonteCarloSearch<Gomoku>>(
-                make_unique<MonteCarloTreeSearch<Gomoku>>(new Gomoku(), 2, &eval)), 2);
+                make_unique<MonteCarloTreeSearch<Gomoku>>(new Gomoku(), 2, &eval)), 1000);
 
     Round<Gomoku> round(move(pa), move(pb));
 
