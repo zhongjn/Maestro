@@ -18,6 +18,7 @@ namespace Maestro {
     public:
         struct GlobalStat {
             int sim_use_transposition = 0,
+                sim_game_end = 0,
                 sim_total = 0;
             map<int, int> children_evaluated_dist;
             float tt_load_factor = 0;
@@ -280,6 +281,7 @@ namespace Maestro {
         virtual void simulate(int k) {
             global_stat.sim_total = 0;
             global_stat.sim_use_transposition = 0;
+            global_stat.sim_game_end = 0;
 
             for (int i = 0; i < k; i++) {
                 global_stat.sim_total++;
@@ -300,6 +302,7 @@ namespace Maestro {
                     Status stat = game.get_status();
 
                     if (stat.end) {
+                        global_stat.sim_game_end++;
                         if (stat.winner == game.get_color()) {
                             backup_v = 1;
                         }
@@ -319,6 +322,7 @@ namespace Maestro {
                         break;
                     }
                     else if (use_transposition) {
+                        global_stat.sim_use_transposition++;
                         backup_v = current->v;
                         break;
                     }
@@ -341,7 +345,6 @@ namespace Maestro {
                     int ns_after = next->ns = max(next->ns, action->visit);
 
                     if (ns_before == ns_after) {
-                        global_stat.sim_use_transposition++;
                         use_transposition = true;
                     }
 

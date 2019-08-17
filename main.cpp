@@ -12,15 +12,16 @@ int main() {
 
     Gomoku g;
     //g.black.set(1, 1, true);
-    //g.black.set(2, 2, true);
-    //g.black.set(3, 3, true);
-    //g.black.set(4, 4, true);
+    //g.white.set(2, 2, true);
+    //g.white.set(3, 3, true);
+    //g.white.set(4, 4, true);
+    //g.white.set(5, 5, true);
 
     auto pa =
-        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 2000);
+        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 10000);
 
     auto pb =
-        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 2000);
+        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 10000);
 
     Round<Gomoku> round(g, move(pa), move(pb));
 
@@ -31,6 +32,7 @@ int main() {
         auto& stat = MonteCarloGraphSearch<Gomoku>::global_stat;
         cout << "sim total: " << stat.sim_total << endl;
         cout << "sim transposed: " << stat.sim_use_transposition << endl;
+        cout << "sim game end: " << stat.sim_game_end << endl;
         cout << "tt load factor: " << stat.tt_load_factor << endl;
 
         {

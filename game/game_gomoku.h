@@ -58,7 +58,7 @@ namespace Maestro {
                 bitset<256> res = _stones;
                 res.flip();
                 res |= hb._stones;
-                return res.any();
+                return res.all();
             }
         } black, white;
 
