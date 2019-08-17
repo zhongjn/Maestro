@@ -1,8 +1,10 @@
 #include "search_graph.h"
 
-using namespace Maestro;
+namespace Maestro {
 
-static void test_compile() {
-    // for compile usage
-    MonteCarloGraphSearch<SampleGame> mcgs(nullptr, SampleGame());
+    static void test_compile() {
+        // for compile usage
+        MonteCarloGraphSearch<SampleGame> mcgs(nullptr, SampleGame());
+    }
+
 }

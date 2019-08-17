@@ -64,3 +64,18 @@ TEST_CASE(gomoku_simple2) {
     expect(status2.end, "should end");
     expect(status2.winner == Color::A, "A(black) should win");
 }
+
+TEST_CASE(gomoku_could_transfer) {
+    Gomoku g1;
+    using M = Move<Gomoku>;
+    g1.black.set(2, 2, true);
+    g1.black.set(4, 3, true);
+
+    Gomoku g2 = g1;
+    g2.black.set(5, 6, true);
+    expect(g1.could_transfer_to(g1), "could transfer to self");
+    expect(g2.could_transfer_to(g2), "could transfer to self");
+
+    expect(g1.could_transfer_to(g2), "could transfer");
+    expect(!g2.could_transfer_to(g1), "could not transfer");
+}

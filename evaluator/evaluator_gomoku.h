@@ -9,28 +9,38 @@ namespace Maestro {
             Color cur_color = game.get_color();
             std::vector<MovePrior<Gomoku>> p;
             std::vector<Move<Gomoku>> moves = game.get_all_legal_moves();
-            int b, w;
-            int max;
+
             float sum = 0;
-            float v;
-            judge(game.black, game.white, b, w);
-            v = cur_color != Color::A ? b : w;
-            v = v / 5;
-
             for (Move<Gomoku>& m : moves) {
-                Gomoku g = game;
-                g.move(m);
-                judge(g.black, g.white, b, w);
-                max = cur_color == Color::A ? b : w;
-                sum += max;
-                p.push_back(MovePrior<Gomoku>{m, float(max)});
+                bool found = false;
+                for (int dr = -1; dr <= 1; dr++) {
+                    for (int dc = -1; dc <= 1; dc++) {
+                        int r = m.row + dr, c = m.col + dc;
+                        if (game.black.safe_get(r, c) || game.white.safe_get(r, c)) {
+                            found = true;
+                            goto break_inner;
+                        }
+                    }
+                }
+            break_inner:
+                if (found) {
+                    float prior = found ? 1 : 0.1;
+                    prior = 1;
+                    sum += prior;
+                    p.push_back(MovePrior<Gomoku>{m, prior});
+                }
+            }
 
+            if (p.size() == 0) {
+                sum += 1;
+                p.push_back(MovePrior<Gomoku>{Move<Gomoku>{5, 5}, 1});
             }
 
             for (MovePrior<Gomoku>& mp : p) {
                 mp.p = mp.p / sum;
             }
-            return Evaluation<Gomoku>{move(p), v};
+
+            return Evaluation<Gomoku>{move(p), 0};
         }
     private:
         void set_check_interval(int d, int& start, int& end) {
