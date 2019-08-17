@@ -2,17 +2,28 @@
 #include "../util/lazy.h"
 #include "../util/expirable.h"
 #include "search_base.h"
+#include <map>
 #include <unordered_map>
-#include <stack>
+#include <unordered_set>
 #include <algorithm>
 
 namespace Maestro {
     using namespace std;
 
     const float PUCT = 2;
+    const float NOISE_EPSILON = 0.25;
 
     template<typename TGame>
     class MonteCarloGraphSearch : public IMonteCarloSearch<TGame> {
+    public:
+        struct GlobalStat {
+            int sim_use_transposition = 0,
+                sim_total = 0;
+            map<int, int> children_evaluated_dist;
+            float tt_load_factor = 0;
+        } inline static global_stat = GlobalStat();
+
+    private:
 
         // struct definations
         struct GameHash {
@@ -63,6 +74,7 @@ namespace Maestro {
             Move<TGame> move;
             int visit = 0;
             float p = 0;
+            float p_noise_delta = 0;
             weak_ptr<State> parent_state;
             Lazy<shared_ptr<State>> child_state;
 
@@ -101,9 +113,6 @@ namespace Maestro {
         vector<State*> _sim_stack;
         vector<State*> _backup_stack;
 
-        int _sim_total = 0;
-        int _sim_saved = 0;
-
         float action_ucb(State* parent, Action* action) {
             static uniform_real_distribution<float> dist(0, 1E-3);
             float u = 0;
@@ -111,23 +120,30 @@ namespace Maestro {
                 u += parent->convert_v(action->child_state.value().get());
             }
             u += dist(_rnd_eng);
-            u += PUCT * action->p * sqrtf(parent->ns) / (1 + action->visit);
+            u += PUCT * (action->p + action->p_noise_delta) * sqrtf(parent->ns) / (1 + action->visit);
             return u;
         }
 
         void backup_dv(State * origin) {
+
+            int visit_expect = 0, visit_actual = 0;
+
             // 1. 计算子DAG各节点孩子数量
             _backup_stack.clear();
             _backup_stack.push_back(origin);
             while (!_backup_stack.empty()) {
                 State* cur = _backup_stack.back();
                 _backup_stack.pop_back();
+                ++visit_expect;
                 for (auto& wpa : cur->parent_actions) {
                     if (shared_ptr<Action> pa = wpa.lock(); pa) {
                         shared_ptr<State> ps = pa->parent_state.lock();
                         assert(ps);
-                        ps->backup_total_child_count(_timestamp)++;
-                        _backup_stack.push_back(ps.get());
+                        int child_before = ps->backup_total_child_count(_timestamp);
+                        if (child_before == 0) {
+                            _backup_stack.push_back(ps.get());
+                        }
+                        ++ps->backup_total_child_count(_timestamp);
                     }
                 }
             }
@@ -138,6 +154,7 @@ namespace Maestro {
             while (!_backup_stack.empty()) {
                 State* cur = _backup_stack.back();
                 _backup_stack.pop_back();
+                ++visit_actual;
 
                 float cur_v_before = cur->v;
                 // 累加dv到v上
@@ -161,10 +178,97 @@ namespace Maestro {
                     }
                 }
             }
+
+            assert(visit_expect == visit_actual);
+        }
+
+        void slow_dfs_traversal(function<void(State*)> fn) {
+            vector<State*> stack;
+            unordered_set<State*> visited;
+            stack.push_back(_root.get());
+            while (!stack.empty()) {
+                State* current = stack.back();
+                stack.pop_back();
+
+                visited.insert(current);
+                fn(current);
+
+                if (current->child_actions.initialized()) {
+                    for (auto& ac : current->child_actions.value()) {
+                        if (ac->child_state.initialized()) {
+                            State* ptr = ac->child_state.value().get();
+                            // not visited
+                            if (visited.find(ptr) == visited.end()) {
+                                stack.push_back(ptr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        vector<float> rand_dirichlet(int n, float concentration)
+        {
+            std::vector<float> ret = std::vector<float>(n, 0);
+            std::gamma_distribution<float> gamma(concentration, 1);
+            float sum = 0;
+            for (int i = 0; i < n; ++i) {
+                ret[i] = gamma(_rnd_eng);
+                sum += ret[i];
+            }
+            for (int i = 0; i < n; ++i) {
+                ret[i] = ret[i] / sum;
+            }
+            return ret;
         }
 
         void apply_dirichlet_noise() {
-            // TODO
+            auto all_moves = _root->game.get_all_legal_moves();
+            auto noise = rand_dirichlet(all_moves.size(), 0.03);
+
+            int i = 0;
+            for (auto& m : all_moves) {
+                bool found = false;
+                Action* action = nullptr;
+                for (auto& ac : _root->child_actions.value()) {
+                    if (ac->move == m) {
+                        found = true;
+                        action = ac.get();
+                        break;
+                    }
+                }
+                if (!found) {
+                    auto ac = make_shared<Action>(&_transposition, m, weak_ptr(_root), 0);
+                    action = ac.get();
+                    _root->child_actions->push_back(ac);
+                }
+                action->p_noise_delta = -NOISE_EPSILON * action->p + NOISE_EPSILON * noise[i];
+                ++i;
+            }
+        }
+
+        void collect_children_evaluated_dist() {
+            global_stat.children_evaluated_dist.clear();
+            map<int, int> dist;
+            int max_count = 0;
+            slow_dfs_traversal([&dist, &max_count](State * state) {
+                if (state->child_actions.initialized()) {
+                    int count = 0;
+                    for (auto& ac : state->child_actions.value()) {
+                        if (ac->child_state.initialized()) {
+                            if (ac->child_state.value()->evaluated) {
+                                count++;
+                            }
+                        }
+                    }
+                    ++dist[count];
+                    max_count = max(count, max_count);
+                }
+                else {
+                    ++dist[0];
+                }
+            });
+            global_stat.children_evaluated_dist = std::move(dist);
         }
 
     public:
@@ -173,13 +277,12 @@ namespace Maestro {
             _root = make_shared<State>(&_transposition, game);
         }
 
-        float save_ratio() const {
-            return float(_sim_saved) / _sim_total;
-        }
-
         virtual void simulate(int k) {
+            global_stat.sim_total = 0;
+            global_stat.sim_use_transposition = 0;
+
             for (int i = 0; i < k; i++) {
-                _sim_total++;
+                global_stat.sim_total++;
                 _timestamp++;
                 _sim_stack.clear();
 
@@ -238,7 +341,7 @@ namespace Maestro {
                     int ns_after = next->ns = max(next->ns, action->visit);
 
                     if (ns_before == ns_after) {
-                        _sim_saved++;
+                        global_stat.sim_use_transposition++;
                         use_transposition = true;
                     }
 
@@ -257,6 +360,9 @@ namespace Maestro {
 
                 backup_dv(leaf);
             }
+
+            collect_children_evaluated_dist();
+            global_stat.tt_load_factor = _transposition.load_factor();
         }
 
         virtual vector<MoveVisit> get_moves() const {

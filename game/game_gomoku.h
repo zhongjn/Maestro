@@ -106,7 +106,7 @@ namespace Maestro {
             return black.could_transfer_to(another.black) && white.could_transfer_to(another.white);
         }
 
-        bool operator==(const Gomoku & another) const override { return _steps == another._steps && black == another.black && white == another.white; }
+        bool operator==(const Gomoku& another) const override { return _steps == another._steps && black == another.black && white == another.white; }
 
         string to_string() const {
             ostringstream out;
