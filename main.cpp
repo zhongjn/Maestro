@@ -18,10 +18,10 @@ int main() {
     //g.white.set(5, 5, true);
 
     auto pa =
-        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 10000);
+        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 20000);
 
     auto pb =
-        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 10000);
+        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 20000);
 
     Round<Gomoku> round(g, move(pa), move(pb));
 
@@ -50,6 +50,9 @@ int main() {
             cout << endl;
             printf("with blocking factor %d, used=%d, unused=%d\n", block, used, unused);
         }
+
+        printf("node evaluated total=%d, used=%d\n", stat.node_evaluated_total, stat.node_evaluated_used);
+        printf("batch count=%d\n", stat.eval_batch_count);
         //MonteCarloGraphSearch::global_stat
         // printf("ra: %f\n", pa_ptr->save_ratio());
     }
