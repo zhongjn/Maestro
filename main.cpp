@@ -18,10 +18,10 @@ int main() {
     //g.white.set(5, 5, true);
 
     auto pa =
-        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 20000);
+        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 50000);
 
     auto pb =
-        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 20000);
+        make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g), 50000);
 
     Round<Gomoku> round(g, move(pa), move(pb));
 
@@ -34,22 +34,6 @@ int main() {
         cout << "sim transposed: " << stat.sim_use_transposition << endl;
         cout << "sim game end: " << stat.sim_game_end << endl;
         cout << "tt load factor: " << stat.tt_load_factor << endl;
-
-        {
-            const int block = 4;
-            int used = 0;
-            int unused = 0;
-            cout << "children evaluated distribution:" << endl;
-            for (auto& kvp : stat.children_evaluated_dist) {
-                cout << "{" << kvp.first << ":" << kvp.second << "} ";
-                int up = (kvp.first + block - 1) / block * block;
-                int redundant = up - kvp.first;
-                unused += redundant * kvp.second;
-                used += kvp.second;
-            }
-            cout << endl;
-            printf("with blocking factor %d, used=%d, unused=%d\n", block, used, unused);
-        }
 
         printf("node evaluated total=%d, used=%d\n", stat.node_evaluated_total, stat.node_evaluated_used);
         printf("batch count=%d\n", stat.eval_batch_count);

@@ -24,7 +24,6 @@ namespace Maestro {
             int visit_evaluating = 0;
             int node_evaluated_total = 0, node_evaluated_used = 0;
             int eval_batch_count = 0;
-            map<int, int> children_evaluated_dist;
             float tt_load_factor = 0;
         } inline static global_stat = GlobalStat();
 
@@ -441,18 +440,24 @@ namespace Maestro {
                 }
 
                 vector<shared_ptr<Action>>& actions = current->child_actions.value();
-                vector<float> ac_ucb;
-                ac_ucb.reserve(actions.size());
+                vector<float> ac_ucb_temp;
+                ac_ucb_temp.reserve(actions.size());
                 Action* action = nullptr;
+                int max_idx = -1;
                 float max_ucb = -100000;
+                int idx = 0;
                 for (auto& ac : actions) {
                     float ucb = action_ucb(current, ac.get(), ts_last_batch);
-                    ac_ucb.push_back(ucb);
+                    ac_ucb_temp.push_back(ucb);
                     if (ucb > max_ucb) {
                         max_ucb = ucb;
+                        max_idx = idx;
                         action = ac.get();
                     }
+                    idx++;
                 }
+
+                ac_ucb_temp[max_idx] += 1000; // 重要！保证选中的action被排序到最前
 
                 if (!action->child_state.initialized() && action->child_state.value().get()->ns == 0) {
                     // 生成前k个未初始化的子节点
@@ -465,7 +470,8 @@ namespace Maestro {
                     }
                     int n_select = min<int>(ac_no.size(), SPECULATIVE_BATCH_SIZE);
                     // TODO: 可以用堆排优化
-                    sort(ac_no.begin(), ac_no.end(), [&ac_ucb](int no1, int no2) { return ac_ucb[no1] > ac_ucb[no2]; });
+                    sort(ac_no.begin(), ac_no.end(), [&ac_ucb_temp](int no1, int no2) { return ac_ucb_temp[no1] > ac_ucb_temp[no2]; });
+                    
                     int cur_cnt = 0;
                     int t = 0;
                     for (int no : ac_no) {
@@ -479,11 +485,11 @@ namespace Maestro {
 
                     int target_cnt = clamp(t * 1, 1, 20000);
 
-                    //target_cnt = 0;
                     for (int no : ac_no) {
                         State* cs = actions[no]->child_state.value().get();
                         if (cs->ns == 0) {
                             if (!cs->game.get_status().end && !cs->evaluating && !cs->evaluated) {
+                               
                                 cur_cnt++;
                                 cs->stop_selection = true;
                                 cs->evaluating = true;
@@ -551,7 +557,6 @@ namespace Maestro {
             }
         }
 
-        collect_children_evaluated_dist();
         global_stat.tt_load_factor = _transposition.load_factor();
     }
 

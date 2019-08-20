@@ -22,7 +22,7 @@ namespace Maestro {
         int _steps = 0;
         Color _color = Color::A;
         Status _status;
-        Move<Gomoku> _last_move;
+        Move<Gomoku> _last_move = { -1,-1 };
 
         class HalfBoard;
         void set_check_interval(int d, int& start, int& end);
