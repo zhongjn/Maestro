@@ -1,5 +1,6 @@
 #include "round.h"
 #include <functional>
+#include <iostream>
 
 namespace Maestro {
     using namespace std;
@@ -27,12 +28,12 @@ namespace Maestro {
             if (_mstat.current > _mstat.total) return false;
 
             auto pa = _p1_creator(), pb = _p2_creator();
-            bool swap_side = _current % 2 == 0;
+            bool swap_side = _mstat.current % 2 == 0;
             if (swap_side) swap(pa, pb);
 
-            auto r = Round<TGame>(move(pa), move(pb));
+            auto r = Round<TGame>(TGame(), move(pa), move(pb));
             r.step_to_end();
-
+            puts(r.game().to_string().c_str());
             Color winner = r.game().get_status().winner;
             int a_win = 0, b_win = 0, draw = 0;
             if (winner == Color::None) {
@@ -49,12 +50,13 @@ namespace Maestro {
             _mstat.draw += draw;
             _mstat.p1_win += !swap_side ? a_win : b_win;
             _mstat.p2_win += !swap_side ? b_win : a_win;
-            
+            printf("p1=%d, p2=%d, draw=%d\n", _mstat.p1_win, _mstat.p2_win, _mstat.draw);
             return true;
         }
 
         void step_to_end() {
             while (step()) {}
+            printf("match end! p1=%d, p2=%d, draw=%d\n", _mstat.p1_win, _mstat.p2_win, _mstat.draw);
         }
 
         const MatchStat& stat() {

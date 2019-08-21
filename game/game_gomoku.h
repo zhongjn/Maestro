@@ -87,6 +87,10 @@ namespace Maestro {
         bool is_legal_move(Move<Gomoku> m) const override {
             assert(!_status.end);
             if (m.col < 0 || m.col >= BOARD_SIZE || m.row < 0 || m.row >= BOARD_SIZE) return false;
+            return is_legal_move_unchecked(m);
+        }
+
+        bool is_legal_move_unchecked(Move<Gomoku> m) const {
             return (!black.get(m) && !white.get(m));
         }
 

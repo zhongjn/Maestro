@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
+#include <iostream>
+#include <time.h>
 
 namespace Maestro {
     using namespace std;
@@ -25,7 +27,21 @@ namespace Maestro {
             int node_evaluated_total = 0, node_evaluated_used = 0;
             int eval_batch_count = 0;
             float tt_load_factor = 0;
-        } inline static global_stat = GlobalStat();
+            void print() const {
+                printf("sims: total=%d, game_end=%d, transposed=%d\n", sim_total, sim_game_end, sim_use_transposition);
+                printf("eval: total=%d, used=%d, batch=%d\n", node_evaluated_total, node_evaluated_used, eval_batch_count);
+                printf("misc: tt_load_factor=%f, visit_evaluating=%d\n", tt_load_factor, visit_evaluating);
+            }
+        } global_stat = GlobalStat();
+
+        struct Config {
+            bool same_response = false;
+            bool enable_dag = true;
+            bool dirichlet_noise = false;
+            int leaf_batch_count = 8;
+            float puct = 2;
+            float virtual_loss = 1;
+        };
 
     private:
 
@@ -66,18 +82,6 @@ namespace Maestro {
             float convert_v(State* state) const {
                 return convert_v(state->game.get_color(), state->v);
             }
-
-            State(Transposition* tt, TGame game) : game(game) {
-                child_actions = [this, tt]() {
-                    vector<shared_ptr<Action>> actions;
-                    assert(eval);
-                    for (auto& mp : eval->p) {
-                        actions.push_back(make_shared<Action>(tt, mp.move, weak_from_this(), mp.p));
-                    }
-                    eval = nullptr;
-                    return actions;
-                };
-            }
         };
 
         struct Action : public enable_shared_from_this<Action> {
@@ -87,33 +91,9 @@ namespace Maestro {
             float p_noise_delta = 0;
             weak_ptr<State> parent_state;
             Lazy<shared_ptr<State>> child_state;
-
-            Action(Transposition* tt, Move<TGame> move, weak_ptr<State> parent, float p) : move(move), parent_state(parent), p(p) {
-                child_state = [this, tt]() {
-                    shared_ptr<State> parent = parent_state.lock();
-                    assert(parent);
-
-                    TGame game = parent->game; // copy the game
-                    game.move(this->move);
-
-                    auto& entry = tt->find(game);
-                    shared_ptr<State> child;
-                    if (entry != tt->end()) {
-                        child = entry->second;
-                    }
-                    else {
-                        child = make_shared<State>(tt, game);
-                        tt->insert(pair<TGame, shared_ptr<State>>(game, child));
-                    }
-                    child->parent_actions.push_back(weak_from_this());
-                    return child;
-                };
-            }
         };
 
-        // hyper parameters
-        int _leaf_batch_count;
-        float _puct, _virtual_loss;
+        Config _config;
 
         // members
         shared_ptr<State> _root;
@@ -135,12 +115,56 @@ namespace Maestro {
             int time(Timeline tl) { return _timestamp + int(tl); }
         } _timeline;
 
-
-
-        bool _dirichlet_noise;
-
         vector<State*> _sim_stack;
         vector<State*> _backup_stack;
+
+        shared_ptr<State> create_state(TGame game, bool root = false) {
+            shared_ptr<State> ss;
+            if (_config.enable_dag || root) {
+                auto& entry = _transposition.find(game);
+                if (entry != _transposition.end()) {
+                    ss = entry->second;
+                }
+            }
+
+            if (!ss) {
+                ss = make_shared<State>();
+                ss->game = game;
+                _transposition.insert(pair<TGame, shared_ptr<State>>(game, ss));
+                State* s = ss.get();
+                ss->child_actions = [this, s]() {
+                    vector<shared_ptr<Action>> actions;
+                    assert(s->eval);
+                    for (auto& mp : s->eval->p) {
+                        actions.push_back(create_action(mp.move, s->weak_from_this(), mp.p));
+                    }
+                    s->eval = nullptr;
+                    return actions;
+                };
+            }
+
+            return ss;
+        }
+
+        shared_ptr<Action> create_action(Move<TGame> m, weak_ptr<State> parent, float p) {
+            auto acs = make_shared<Action>();
+            Action* ac = acs.get();
+            ac->move = m;
+            ac->parent_state = parent;
+            ac->p = p;
+            ac->child_state = [this, ac]() {
+                shared_ptr<State> parent = ac->parent_state.lock();
+                assert(parent);
+
+                TGame game = parent->game; // copy the game
+                game.move(ac->move);
+
+                shared_ptr<State> child = create_state(game);
+                child->parent_actions.push_back(ac->weak_from_this());
+                return child;
+            };
+            return acs;
+        }
 
         float action_ucb(State* parent, Action* action, int ts_virtual_loss);
 
@@ -156,14 +180,20 @@ namespace Maestro {
 
     public:
 
-        MonteCarloGraphSearch(shared_ptr<IEvaluator<TGame>> evaluator, TGame game, bool dirichlet_noise = false, int leaf_batch_count = 8, float puct = 2, float virtual_loss = 1) :
+        MonteCarloGraphSearch(
+            shared_ptr<IEvaluator<TGame>> evaluator,
+            TGame game,
+            Config config = Config()) :
             _evaluator(std::move(evaluator)),
-            _dirichlet_noise(dirichlet_noise),
-            _leaf_batch_count(leaf_batch_count),
-            _puct(puct),
-            _virtual_loss(virtual_loss)
+            _config(config)
         {
-            _root = make_shared<State>(&_transposition, game);
+            _root = create_state(game, true);
+
+            if (!_config.same_response) {
+                static int seed;
+                seed += time(0);
+                _rnd_eng.seed(seed);
+            }
         }
 
         virtual void simulate(int k);
@@ -185,19 +215,22 @@ namespace Maestro {
         }
 
         virtual void move(Move<TGame> move);
+
+        virtual void print_stat() const override {
+            global_stat.print();
+        }
     };
 
     template<typename TGame>
     inline float MonteCarloGraphSearch<TGame>::action_ucb(State* parent, Action* action, int ts_virtual_loss) {
-        static uniform_real_distribution<float> dist(0, 1E-3);
-        float u = 0;
+
+        float u = 1;
         if (action->child_state.initialized()) {
             State* child = action->child_state.value().get();
             u += parent->convert_v(child);
-            u -= child->virtual_loss_cnt(ts_virtual_loss) * _virtual_loss / max(1, child->ns);
+            u -= child->virtual_loss_cnt(ts_virtual_loss) * _config.virtual_loss / max(1, child->ns);
         }
-        u += dist(_rnd_eng);
-        u += _puct * (action->p + action->p_noise_delta) * sqrtf(parent->ns) / (1 + action->visit);
+        u += _config.puct * (action->p + action->p_noise_delta) * sqrtf(parent->ns) / (1 + action->visit);
         return u;
     }
 
@@ -326,7 +359,7 @@ namespace Maestro {
                 }
             }
             if (!found) {
-                auto ac = make_shared<Action>(&_transposition, m, weak_ptr(_root), 0);
+                auto ac = create_action(m, weak_ptr(_root), 0);
                 action = ac.get();
                 _root->child_actions->push_back(ac);
             }
@@ -362,7 +395,7 @@ namespace Maestro {
 
     template<typename TGame>
     inline void MonteCarloGraphSearch<TGame>::simulate(int k) {
-        global_stat = GlobalStat();
+        // global_stat = GlobalStat();
 
         int cur_leaf_batch_count = 0;
         vector<State*> eval_batch;
@@ -385,7 +418,7 @@ namespace Maestro {
                 continue;
             }
 
-            if (_dirichlet_noise) {
+            if (_config.dirichlet_noise) {
                 generate_root_dirichlet_noise();
             }
 
@@ -449,7 +482,7 @@ namespace Maestro {
                 for (auto& ac : actions) {
                     float ucb = action_ucb(current, ac.get(), ts_last_batch);
                     ac_ucb_temp.push_back(ucb);
-                    if (ucb > max_ucb) {
+                    if (ucb >= max_ucb) {
                         max_ucb = ucb;
                         max_idx = idx;
                         action = ac.get();
@@ -471,7 +504,7 @@ namespace Maestro {
                     int n_select = min<int>(ac_no.size(), SPECULATIVE_BATCH_SIZE);
                     // TODO: 可以用堆排优化
                     sort(ac_no.begin(), ac_no.end(), [&ac_ucb_temp](int no1, int no2) { return ac_ucb_temp[no1] > ac_ucb_temp[no2]; });
-                    
+
                     int cur_cnt = 0;
                     int t = 0;
                     for (int no : ac_no) {
@@ -489,7 +522,7 @@ namespace Maestro {
                         State* cs = actions[no]->child_state.value().get();
                         if (cs->ns == 0) {
                             if (!cs->game.get_status().end && !cs->evaluating && !cs->evaluated) {
-                               
+
                                 cur_cnt++;
                                 cs->stop_selection = true;
                                 cs->evaluating = true;
@@ -530,7 +563,7 @@ namespace Maestro {
             ls.push_back(leaf);
             backup_dv(ls);
 
-            if (evaluating_node_visited || cur_leaf_batch_count == _leaf_batch_count || i_sim == k) {
+            if (evaluating_node_visited || cur_leaf_batch_count == _config.leaf_batch_count || i_sim == k) {
                 if (eval_batch.size() > 0) {
                     global_stat.eval_batch_count++;
                     global_stat.node_evaluated_total += eval_batch.size();
@@ -564,11 +597,7 @@ namespace Maestro {
     inline void MonteCarloGraphSearch<TGame>::move(Move<TGame> move) {
         TGame g = _root->game;
         g.move(move);
-        _root = make_shared<State>(&_transposition, g);
-
-        if (_dirichlet_noise) {
-            generate_root_dirichlet_noise();
-        }
+        _root = create_state(g, true);
 
         for (auto it = begin(_transposition); it != end(_transposition);)
         {

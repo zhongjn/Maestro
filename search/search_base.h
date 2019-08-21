@@ -4,6 +4,8 @@
 #include "../game/game_base.h"
 #include <cassert>
 #include <random>
+#include <iostream>
+
 namespace Maestro {
     using namespace std;
 
@@ -28,6 +30,9 @@ namespace Maestro {
         virtual float get_value(Color color) const = 0;
         virtual TGame get_game_snapshot() const = 0;
         virtual void move(Move<TGame> move) = 0;
+        virtual void print_stat() const {
+            printf("not implemented\n");
+        }
 
         Move<TGame> pick_move(float temp) {
             assert(temp >= 0.0f);
@@ -35,15 +40,24 @@ namespace Maestro {
             if (temp == 0.0f) {
                 auto moves = get_moves();
                 int max_visit = -1;
-                Move<TGame> max_move;
+                vector<Move<TGame>> max_moves;
+
                 assert(moves.size() > 0);
+
                 for (auto& m : moves) {
                     if (m.visit_count > max_visit) {
                         max_visit = m.visit_count;
-                        max_move = m.move;
                     }
                 }
-                return max_move;
+
+                for (auto& m : moves) {
+                    if (m.visit_count == max_visit) {
+                        max_moves.push_back(m.move);
+                    }
+                }
+
+                uniform_int_distribution<int> dist(0, max_moves.size() - 1);
+                return max_moves[dist(_rnd_eng)];
             }
             else {
                 assert(temp >= 0.0f);

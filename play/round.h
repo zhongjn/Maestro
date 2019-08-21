@@ -15,14 +15,18 @@ namespace Maestro {
         const TGame& game() { return _game; }
 
         bool step() {
-            if (_game.get_status().end) return false;
+            if (_game.get_status().end) {
+                return false;
+            }
             Color c = _game.get_color();
             Move<Gomoku> m;
             if (c == Color::A) {
                 m = _pa->get_move(_game);
+                _pb->get_move(_game);
             }
             else if (c == Color::B) {
                 m = _pb->get_move(_game);
+                _pa->get_move(_game);
             }
             else {
                 assert(false);
