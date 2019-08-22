@@ -12,13 +12,14 @@ namespace Maestro {
 
     template<typename TGame>
     class Match {
-        function<unique_ptr<IPlayer<TGame>>()> _p1_creator, _p2_creator;
+        function<shared_ptr<IPlayer<TGame>>()> _p1_creator, _p2_creator;
+        shared_ptr<IPlayer<TGame>> _p1, _p2;
         MatchStat _mstat;
 
     public:
 
 
-        Match(int n_rounds, function<unique_ptr<IPlayer<TGame>>()> p1_creator, function<unique_ptr<IPlayer<TGame>>()> p2_creator)
+        Match(int n_rounds, function<shared_ptr<IPlayer<TGame>>()> p1_creator, function<shared_ptr<IPlayer<TGame>>()> p2_creator)
             : _p1_creator(move(p1_creator)), _p2_creator(move(p2_creator)) {
             if (n_rounds % 2 == 1) ++n_rounds;
             _mstat.total = n_rounds;
@@ -26,8 +27,10 @@ namespace Maestro {
 
         bool step() {
             if (_mstat.current > _mstat.total) return false;
+            _p1 = _p1_creator();
+            _p2 = _p2_creator();
 
-            auto pa = _p1_creator(), pb = _p2_creator();
+            auto pa = _p1, pb = _p2;
             bool swap_side = _mstat.current % 2 == 0;
             if (swap_side) swap(pa, pb);
 
@@ -61,6 +64,18 @@ namespace Maestro {
 
         const MatchStat& stat() {
             return _mstat;
+        }
+
+        const shared_ptr<IPlayer<TGame>>& player(int no) {
+            if (no == 1) {
+                return _p1;
+            }
+            if (no == 2) {
+                return _p2;
+            }
+            else {
+                throw logic_error("invalid player no");
+            }
         }
     };
 }

@@ -10,14 +10,15 @@ namespace Maestro {
     public:
         virtual Move<TGame> get_move(const TGame& game) = 0;
         virtual void move(Move<TGame> m) = 0;
+        virtual ~IPlayer() = default;
     };
 
     template<typename TGame>
     class MonteCarloAIPlayer final : public IPlayer<TGame> {
-        unique_ptr<IMonteCarloSearch<TGame>> _search;
+        shared_ptr<IMonteCarloSearch<TGame>> _search;
         int _n_sim;
     public:
-        MonteCarloAIPlayer(unique_ptr<IMonteCarloSearch<TGame>> search, int n_sim) : _search(std::move(search)), _n_sim(n_sim) {
+        MonteCarloAIPlayer(shared_ptr<IMonteCarloSearch<TGame>> search, int n_sim) : _search(std::move(search)), _n_sim(n_sim) {
 
         }
 
@@ -30,6 +31,10 @@ namespace Maestro {
 
         virtual void move(Move<TGame> m) {
             _search->move(m);
+        }
+
+        shared_ptr<IMonteCarloSearch<TGame>> search() const {
+            return _search;
         }
     };
 

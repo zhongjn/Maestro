@@ -27,26 +27,24 @@ int main() {
     //c2.leaf_batch_count = 8;
     c2.enable_dag = false;
 
-    MonteCarloGraphSearch<Gomoku>* p1, * p2 = nullptr;
+    shared_ptr<MonteCarloGraphSearch<Gomoku>> ps1, ps2;
 
     auto p1_creator = [&]() {
-        auto gs1 = make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g, c1);
-        p1 = gs1.get();
-        return make_unique<MonteCarloAIPlayer<Gomoku>>(move(gs1), 1000); 
+        ps1 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c1);
+        return make_shared<MonteCarloAIPlayer<Gomoku>>(ps1, 1000);
     };
 
     auto p2_creator = [&]() {
-        auto gs2 = make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g, c2);
-        p2 = gs2.get();
-        return make_unique<MonteCarloAIPlayer<Gomoku>>(move(gs2), 1000); 
+        ps2 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c2);
+        return make_shared<MonteCarloAIPlayer<Gomoku>>(ps2, 1000);
     };
 
     Match<Gomoku> match(100, p1_creator, p2_creator);
     while (match.step()) {
         printf("p1 stat:\n");
-        p1->print_stat();
+        ps1->print_stat();
         printf("p2 stat:\n");
-        p2->print_stat();
+        ps2->print_stat();
     }
 
     //auto pa =

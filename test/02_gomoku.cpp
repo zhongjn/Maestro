@@ -67,7 +67,6 @@ TEST_CASE(gomoku_simple2) {
 
 TEST_CASE(gomoku_could_transfer) {
     Gomoku g1;
-    using M = Move<Gomoku>;
     g1.black.set(2, 2, true);
     g1.black.set(4, 3, true);
 

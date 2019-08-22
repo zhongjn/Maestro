@@ -38,5 +38,5 @@ set(targets
 
 foreach(tg ${targets})
     set_property(TARGET ${tg} PROPERTY CXX_STANDARD 17)
-    set_target_properties(${tg} PROPERTIES LINK_FLAGS "/PROFILE")
+    # set_target_properties(${tg} PROPERTIES LINK_FLAGS "/PROFILE")
 endforeach()

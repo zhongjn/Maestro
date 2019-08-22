@@ -132,10 +132,10 @@ namespace Maestro {
 			}
 		}
 
-		vector<MoveVisit> get_moves() const {
-			vector<MoveVisit> ret;
+		vector<MoveVisit<TGame>> get_moves() const {
+			vector<MoveVisit<TGame>> ret;
 			for (MCTSNode<TGame>*& child : m_root->m_children) {
-				ret.push_back(MoveVisit{ child->m_move.move, child->m_N });
+				ret.push_back(MoveVisit<TGame>{ child->m_move.move, child->m_N });
 			}
 			return ret;
 		}

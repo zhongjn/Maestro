@@ -10,23 +10,25 @@ namespace Maestro {
     using namespace std;
 
     template<typename TGame>
+    struct MoveVisit {
+        Move<TGame> move;
+        int visit_count;
+    };
+
+    template<typename TGame>
+    struct MoveVisitProb {
+        Move<TGame> move;
+        float p;
+    };
+
+    template<typename TGame>
     class IMonteCarloSearch {
     protected:
         minstd_rand _rnd_eng;
     public:
-
-        struct MoveVisit {
-            Move<TGame> move;
-            int visit_count;
-        };
-
-        struct MoveVisitProb {
-            Move<TGame> move;
-            float p;
-        };
-
+        virtual ~IMonteCarloSearch() = default;
         virtual void simulate(int k) = 0;
-        virtual vector<MoveVisit> get_moves() const = 0;
+        virtual vector<MoveVisit<TGame>> get_moves() const = 0;
         virtual float get_value(Color color) const = 0;
         virtual TGame get_game_snapshot() const = 0;
         virtual void move(Move<TGame> move) = 0;
@@ -95,17 +97,17 @@ namespace Maestro {
             move(max_move);
         }
 
-        vector<MoveVisitProb> get_moves_prob(float temp) const {
+        vector<MoveVisitProb<TGame>> get_moves_prob(float temp) const {
             auto moves = get_moves();
             vector<float> visit;
             float sum = 0;
             
-            vector<MoveVisitProb> move_prob;
+            vector<MoveVisitProb<TGame>> move_prob;
 
             for (auto& mv : moves) {
                 float v = pow(mv.visit_count, 1 / temp);
                 sum += v;
-                move_prob.push_back(MoveVisitProb{ mv.move, v });
+                move_prob.push_back(MoveVisitProb<TGame>{ mv.move, v });
             }
 
             // normalize

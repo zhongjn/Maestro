@@ -6,9 +6,9 @@ namespace Maestro {
     template<typename TGame>
     class Round {
         TGame _game;
-        unique_ptr<IPlayer<TGame>> _pa, _pb;
+        shared_ptr<IPlayer<TGame>> _pa, _pb;
     public:
-        Round(TGame game, unique_ptr<IPlayer<TGame>> pa, unique_ptr<IPlayer<TGame>> pb) : _game(game), _pa(std::move(pa)), _pb(std::move(pb)) {
+        Round(TGame game, shared_ptr<IPlayer<TGame>> pa, shared_ptr<IPlayer<TGame>> pb) : _game(game), _pa(std::move(pa)), _pb(std::move(pb)) {
 
         }
 
@@ -29,7 +29,7 @@ namespace Maestro {
                 _pa->get_move(_game);
             }
             else {
-                assert(false);
+                throw runtime_error("unexpected color none");
             }
             _game.move(m);
             _pa->move(m);

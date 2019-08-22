@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <iostream>
 #include <time.h>
+#include <functional>
 
 namespace Maestro {
     using namespace std;
@@ -121,7 +122,7 @@ namespace Maestro {
         shared_ptr<State> create_state(TGame game, bool root = false) {
             shared_ptr<State> ss;
             if (_config.enable_dag || root) {
-                auto& entry = _transposition.find(game);
+                const auto& entry = _transposition.find(game);
                 if (entry != _transposition.end()) {
                     ss = entry->second;
                 }
@@ -163,6 +164,7 @@ namespace Maestro {
                 child->parent_actions.push_back(ac->weak_from_this());
                 return child;
             };
+
             return acs;
         }
 
@@ -176,45 +178,43 @@ namespace Maestro {
 
         void generate_root_dirichlet_noise();
 
-        void collect_children_evaluated_dist();
-
     public:
 
         MonteCarloGraphSearch(
             shared_ptr<IEvaluator<TGame>> evaluator,
             TGame game,
             Config config = Config()) :
-            _evaluator(std::move(evaluator)),
-            _config(config)
+            _config(config),
+            _evaluator(std::move(evaluator))
         {
             _root = create_state(game, true);
 
             if (!_config.same_response) {
                 static int seed;
-                seed += time(0);
-                _rnd_eng.seed(seed);
+                seed += int(time(0));
+                this->_rnd_eng.seed(seed);
             }
         }
 
-        virtual void simulate(int k);
+        virtual void simulate(int k) override;
 
-        virtual vector<MoveVisit> get_moves() const {
-            vector<MoveVisit> mvs;
+        virtual vector<MoveVisit<TGame>> get_moves() const override {
+            vector<MoveVisit<TGame>> mvs;
             for (auto& ap : _root->child_actions.value()) {
-                mvs.push_back(MoveVisit{ ap->move, ap->visit });
+                mvs.push_back(MoveVisit<TGame>{ ap->move, ap->visit });
             }
             return mvs;
         }
 
-        virtual float get_value(Color color) const {
+        virtual float get_value(Color color) const override {
             return  (_root->game.get_color() == color ? 1 : -1) * _root->v;
         }
 
-        virtual TGame get_game_snapshot() const {
+        virtual TGame get_game_snapshot() const override {
             return _root->game;
         }
 
-        virtual void move(Move<TGame> move);
+        virtual void move(Move<TGame> move) override;
 
         virtual void print_stat() const override {
             global_stat.print();
@@ -235,7 +235,7 @@ namespace Maestro {
     }
 
     template<typename TGame>
-    inline void MonteCarloGraphSearch<TGame>::backup_dv(const vector<State*> & origins, Timeline tl) {
+    inline void MonteCarloGraphSearch<TGame>::backup_dv(const vector<State*>& origins, Timeline tl) {
 
         int visit_expect = 0, visit_actual = 0;
         int ts = _timeline.time(tl);
@@ -331,7 +331,7 @@ namespace Maestro {
         std::gamma_distribution<float> gamma(concentration, 1);
         float sum = 0;
         for (int i = 0; i < n; ++i) {
-            ret[i] = gamma(_rnd_eng);
+            ret[i] = gamma(this->_rnd_eng);
             sum += ret[i];
         }
         for (int i = 0; i < n; ++i) {
@@ -366,31 +366,6 @@ namespace Maestro {
             action->p_noise_delta = -NOISE_EPSILON * action->p + NOISE_EPSILON * noise[i];
             ++i;
         }
-    }
-
-    template<typename TGame>
-    inline void MonteCarloGraphSearch<TGame>::collect_children_evaluated_dist() {
-        global_stat.children_evaluated_dist.clear();
-        map<int, int> dist;
-        int max_count = 0;
-        slow_dfs_traversal([&dist, &max_count](State * state) {
-            if (state->ns > 0 && state->child_actions.initialized()) {
-                int count = 0;
-                for (auto& ac : state->child_actions.value()) {
-                    if (ac->child_state.initialized()) {
-                        if (ac->child_state.value()->evaluated && ac->child_state.value()->ns > 0) {
-                            count++;
-                        }
-                    }
-                }
-                ++dist[count];
-                max_count = max(count, max_count);
-            }
-            else {
-                ++dist[0];
-            }
-        });
-        global_stat.children_evaluated_dist = std::move(dist);
     }
 
     template<typename TGame>
@@ -473,6 +448,7 @@ namespace Maestro {
                 }
 
                 vector<shared_ptr<Action>>& actions = current->child_actions.value();
+
                 vector<float> ac_ucb_temp;
                 ac_ucb_temp.reserve(actions.size());
                 Action* action = nullptr;
@@ -497,11 +473,10 @@ namespace Maestro {
                     // 加入估值队列，设置其为evaluating
                     vector<int> ac_no;
                     ac_no.reserve(actions.size());
-                    int idx = 0;
-                    for (auto& ac : actions) {
-                        ac_no.push_back(idx++);
+                    for (int i = 0; i < actions.size(); i++) {
+                        ac_no.push_back(i);
                     }
-                    int n_select = min<int>(ac_no.size(), SPECULATIVE_BATCH_SIZE);
+
                     // TODO: 可以用堆排优化
                     sort(ac_no.begin(), ac_no.end(), [&ac_ucb_temp](int no1, int no2) { return ac_ucb_temp[no1] > ac_ucb_temp[no2]; });
 

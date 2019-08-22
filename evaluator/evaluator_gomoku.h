@@ -11,7 +11,6 @@ namespace Maestro {
             rnd_eng.seed(game.get_hash());
             uniform_real_distribution<float> dist(0, 1E-3);
 
-            Color cur_color = game.get_color();
             std::vector<MovePrior<Gomoku>> p;
             p.reserve(10);
 
