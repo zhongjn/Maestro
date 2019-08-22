@@ -1,39 +1,48 @@
 #pragma once
 #include "../game/game_base.h"
 #include "../game/game_gomoku.h"
+#include <random>
 
 namespace Maestro {
     class SimplisticGomokuEvaluator final : public IEvaluator<Gomoku> {
     public:
         Evaluation<Gomoku> evaluate(const Gomoku& game) {
-            Color cur_color = game.get_color();
+            minstd_rand rnd_eng;
+            rnd_eng.seed(game.get_hash());
+            uniform_real_distribution<float> dist(0, 1E-3);
+
             std::vector<MovePrior<Gomoku>> p;
-            std::vector<Move<Gomoku>> moves = game.get_all_legal_moves();
+            p.reserve(10);
 
             float sum = 0;
-            for (Move<Gomoku>& m : moves) {
-                bool found = false;
-                for (int dr = -1; dr <= 1; dr++) {
-                    for (int dc = -1; dc <= 1; dc++) {
-                        int r = m.row + dr, c = m.col + dc;
-                        if (game.black.safe_get(r, c) || game.white.safe_get(r, c)) {
-                            found = true;
-                            goto break_inner;
+            for (int r = 0; r < BOARD_SIZE; r++) {
+                for (int c = 0; c < BOARD_SIZE; c++) {
+                    Move<Gomoku> m{ r, c };
+                    if (game.is_legal_move_unchecked(m)) {
+                        bool found = false;
+                        for (int dr = -1; dr <= 1; dr++) {
+                            for (int dc = -1; dc <= 1; dc++) {
+                                if (game.black.safe_get(r + dr, c + dc) || game.white.safe_get(r + dr, c + dc)) {
+                                    found = true;
+                                    goto break_inner;
+                                }
+                            }
+                        }
+                    break_inner:
+                        if (found) {
+                            float prior = found ? 1 : 0.1;
+                            prior = 1;
+                            prior += dist(rnd_eng);
+                            sum += prior;
+                            p.push_back(MovePrior<Gomoku>{m, prior});
                         }
                     }
-                }
-            break_inner:
-                if (found) {
-                    float prior = found ? 1 : 0.1;
-                    prior = 1;
-                    sum += prior;
-                    p.push_back(MovePrior<Gomoku>{m, prior});
                 }
             }
 
             if (p.size() == 0) {
                 sum += 1;
-                p.push_back(MovePrior<Gomoku>{Move<Gomoku>{5, 5}, 1});
+                p.push_back(MovePrior<Gomoku>{Move<Gomoku>{7, 7}, 1});
             }
 
             for (MovePrior<Gomoku>& mp : p) {
