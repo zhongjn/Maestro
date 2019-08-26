@@ -1,5 +1,5 @@
 #pragma once
-#include "search_base.h"
+#include <maestro/search/search_base.h>
 
 namespace Maestro {
 	template<typename TGame>

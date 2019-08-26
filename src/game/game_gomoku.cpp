@@ -1,4 +1,4 @@
-#include "game_gomoku.h"
+#include <maestro/game/game_gomoku.h>
 
 using namespace Maestro;
 

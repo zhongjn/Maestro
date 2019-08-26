@@ -1,15 +1,16 @@
 #include <iostream>
-#include "search/search_graph.h"
-#include "game/game_gomoku.h"
-#include "evaluator/evaluator_gomoku.h"
-#include "play/match.h"
-#include "util/common.h"
+#include <maestro/search/search_graph.h>
+#include <maestro/game/game_gomoku.h>
+#include <maestro/evaluator/evaluator_gomoku.h>
+#include <maestro/play/match.h>
+#include <maestro/util/common.h>
+#include <tvm/runtime/module.h>
 using namespace Maestro;
 using namespace std;
 
 int main() {
     auto eval = make_shared<SimplisticGomokuEvaluator>();
-
+    // tvm::runtime::Module::LoadFromFile("");
     Gomoku g;
     //g.black.set(1, 1, true);
     //g.white.set(2, 2, true);

@@ -1,0 +1,1 @@
+#include <maestro/game/game_base.h>

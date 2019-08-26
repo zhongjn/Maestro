@@ -1,4 +1,4 @@
-#include "search_tree.h"
+#include <maestro/search/search_tree.h>
 
 using namespace Maestro;
 
