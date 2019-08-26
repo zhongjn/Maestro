@@ -10,7 +10,8 @@ include_directories(thirdparty/tvm/3rdparty/dmlc-core/include)
 add_subdirectory(thirdparty/tvm)
 
 set(src_common
-    src/evaluator/evaluator_gomoku
+    src/evaluator/eval_gomoku_simplistic
+    src/evaluator/eval_gomoku_nn
     src/util/expirable
     src/util/lazy
     src/util/nullable

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <maestro/search/search_graph.h>
 #include <maestro/game/game_gomoku.h>
-#include <maestro/evaluator/evaluator_gomoku.h>
+#include <maestro/evaluator/eval_gomoku_simplistic.h>
 #include <maestro/play/match.h>
 #include <maestro/util/common.h>
 #include <tvm/runtime/module.h>
