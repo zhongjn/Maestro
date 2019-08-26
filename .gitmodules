@@ -1,0 +1,3 @@
+[submodule "thirdparty/tvm"]
+	path = thirdparty/tvm
+	url = https://github.com/zhongjn/tvm
