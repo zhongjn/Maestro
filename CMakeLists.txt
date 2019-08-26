@@ -7,7 +7,6 @@ include_directories(thirdparty/tvm/include)
 include_directories(thirdparty/tvm/3rdparty/dlpack/include)
 include_directories(thirdparty/tvm/3rdparty/dmlc-core/include)
 
-include(tvm_config.cmake)
 add_subdirectory(thirdparty/tvm)
 
 set(src_common
