@@ -39,7 +39,7 @@ set(src_test
 )
 
 set(copy_files
-	${CMAKE_BINARY_DIR}/thirdparty/tvm/tvm_runtime.dll
+    ${CMAKE_BINARY_DIR}/thirdparty/tvm/tvm_runtime.dll
 )
 
 set(targets

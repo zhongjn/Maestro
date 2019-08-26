@@ -4,19 +4,13 @@
 #include <maestro/evaluator/eval_gomoku_simplistic.h>
 #include <maestro/play/match.h>
 #include <maestro/util/common.h>
-#include <tvm/runtime/module.h>
+
 using namespace Maestro;
 using namespace std;
 
-int main() {
+static void fast_match() {
     auto eval = make_shared<SimplisticGomokuEvaluator>();
-    // tvm::runtime::Module::LoadFromFile("");
     Gomoku g;
-    //g.black.set(1, 1, true);
-    //g.white.set(2, 2, true);
-    //g.white.set(3, 3, true);
-    //g.white.set(4, 4, true);
-    //g.white.set(5, 5, true);
 
     using Config = MonteCarloGraphSearch<Gomoku>::Config;
 
@@ -47,30 +41,45 @@ int main() {
         printf("p2 stat:\n");
         ps2->print_stat();
     }
+}
 
-    //auto pa =
-    //    make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g, c1), 10000);
+static void slow_round() {
+    auto eval = make_shared<SimplisticGomokuEvaluator>();
 
-    //auto pb =
-    //    make_unique<MonteCarloAIPlayer<Gomoku>>(make_unique<MonteCarloGraphSearch<Gomoku>>(eval, g, c2), 10000);
+    Gomoku g;
+    using Config = MonteCarloGraphSearch<Gomoku>::Config;
 
-    //Round<Gomoku> round(g, move(pa), move(pb));
 
-    //while (true) {
-    //    puts(round.game().to_string().c_str());
-    //    getchar();
-    //    round.step();
-    //    auto& stat = MonteCarloGraphSearch<Gomoku>::global_stat;
-    //    cout << "sim total: " << stat.sim_total << endl;
-    //    cout << "sim transposed: " << stat.sim_use_transposition << endl;
-    //    cout << "sim game end: " << stat.sim_game_end << endl;
-    //    cout << "tt load factor: " << stat.tt_load_factor << endl;
+    Config c1 = Config();
+    c1.leaf_batch_count = 1;
+    c1.enable_speculative_evaluation = true;
 
-    //    printf("node evaluated total=%d, used=%d\n", stat.node_evaluated_total, stat.node_evaluated_used);
-    //    printf("batch count=%d\n", stat.eval_batch_count);
-    //    //MonteCarloGraphSearch::global_stat
-    //    // printf("ra: %f\n", pa_ptr->save_ratio());
-    //}
+    Config c2 = Config();
+    c2.leaf_batch_count = 1;
+    c2.enable_speculative_evaluation = false;
 
+
+    auto p1 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c1);
+    auto ps1 =make_shared<MonteCarloAIPlayer<Gomoku>>(p1, 20000);
+
+    auto p2 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c2);
+    auto ps2 = make_shared<MonteCarloAIPlayer<Gomoku>>(p2, 20000);
+
+    Round<Gomoku> round(g, move(ps1), move(ps2));
+
+    while (true) {
+        puts(round.game().to_string().c_str());
+        getchar();
+        round.step();
+        printf("p1 stat:\n");
+        p1->print_stat();
+        printf("p2 stat:\n");
+        p2->print_stat();
+    }
+}
+
+int main() {
+    // fast_match();
+    slow_round();
     return 0;
 }

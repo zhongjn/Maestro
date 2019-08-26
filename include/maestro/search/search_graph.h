@@ -13,8 +13,6 @@
 namespace Maestro {
     using namespace std;
 
-    const int SPECULATIVE_BATCH_SIZE = 4;
-    // const float PUCT = 2;
     const float NOISE_EPSILON = 0.25;
 
     template<typename TGame>
@@ -36,8 +34,9 @@ namespace Maestro {
         } global_stat = GlobalStat();
 
         struct Config {
-            bool same_response = false;
+            bool same_response = false; // 去除对局随机性
             bool enable_dag = true;
+            bool enable_speculative_evaluation = true;
             bool dirichlet_noise = false;
             int leaf_batch_count = 8;
             float puct = 2;
@@ -442,8 +441,7 @@ namespace Maestro {
                         break;
                     }
                     else {
-                        throw logic_error("?");
-                        assert(0);
+                        throw runtime_error("this should never happen");
                     }
                 }
 
@@ -480,24 +478,28 @@ namespace Maestro {
                     // TODO: 可以用堆排优化
                     sort(ac_no.begin(), ac_no.end(), [&ac_ucb_temp](int no1, int no2) { return ac_ucb_temp[no1] > ac_ucb_temp[no2]; });
 
-                    int cur_cnt = 0;
-                    int t = 0;
-                    for (int no : ac_no) {
-                        if (actions[no]->child_state.initialized()) {
-                            State* cs = actions[no]->child_state.value().get();
-                            if (cs->ns > 0) {
-                                t++;
+                    int target_cnt = 0;
+                    if (_config.enable_speculative_evaluation) {
+                        int t = 0;
+                        for (int no : ac_no) {
+                            if (actions[no]->child_state.initialized()) {
+                                State* cs = actions[no]->child_state.value().get();
+                                if (cs->ns > 0) {
+                                    t++;
+                                }
                             }
                         }
+                        target_cnt = clamp(t * 1, 1, 20000); // 启发函数
                     }
 
-                    int target_cnt = clamp(t * 1, 1, 20000);
-
+                    // tricky
+                    // 即使target_cnt=0（不启用投机），下面这个循环也会被至少执行一次
+                    // 这样就可以确保不启用投机时的正确性
+                    int cur_cnt = 0;
                     for (int no : ac_no) {
                         State* cs = actions[no]->child_state.value().get();
                         if (cs->ns == 0) {
                             if (!cs->game.get_status().end && !cs->evaluating && !cs->evaluated) {
-
                                 cur_cnt++;
                                 cs->stop_selection = true;
                                 cs->evaluating = true;
