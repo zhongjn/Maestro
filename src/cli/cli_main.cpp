@@ -11,7 +11,7 @@ using namespace std;
 
 static void fast_match() {
     // auto eval = make_shared<SimplisticGomokuEvaluator>();
-    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.so", "../../../nn/nn.json", "../../../nn/nn.params");
+    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.pt");
     Gomoku g;
 
     using Config = MonteCarloGraphSearch<Gomoku>::Config;
@@ -47,26 +47,26 @@ static void fast_match() {
 
 static void slow_round() {
     // auto eval = make_shared<SimplisticGomokuEvaluator>();
-    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.so", "../../../nn/nn.json", "../../../nn/nn.params");
+    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/gnn.pt");
 
     Gomoku g;
     using Config = MonteCarloGraphSearch<Gomoku>::Config;
 
 
     Config c1 = Config();
-    c1.leaf_batch_count = 1;
+    c1.leaf_batch_count = 32;
     c1.enable_speculative_evaluation = true;
 
     Config c2 = Config();
-    c2.leaf_batch_count = 1;
+    c2.leaf_batch_count = 32;
     c2.enable_speculative_evaluation = false;
 
 
     auto p1 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c1);
-    auto ps1 =make_shared<MonteCarloAIPlayer<Gomoku>>(p1, 20000);
+    auto ps1 =make_shared<MonteCarloAIPlayer<Gomoku>>(p1, 2000);
 
     auto p2 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c2);
-    auto ps2 = make_shared<MonteCarloAIPlayer<Gomoku>>(p2, 20000);
+    auto ps2 = make_shared<MonteCarloAIPlayer<Gomoku>>(p2, 2000);
 
     Round<Gomoku> round(g, move(ps1), move(ps2));
 
@@ -85,7 +85,7 @@ int main() {
     // fast_match();
     slow_round();
     /*
-    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.so", "../../../nn/nn.json", "../../../nn/nn.params");
+    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.pt");
     Gomoku g;
     g.white.set(7, 6, true);
     g.white.set(7, 7, true);
@@ -95,7 +95,6 @@ int main() {
         if (pr.p > 1e-5) {
             printf("(%d, %d) = %f\n", pr.move.row, pr.move.col, pr.p);
         }
-    }
-    */
+    }*/
     return 0;
 }
