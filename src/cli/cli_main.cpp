@@ -2,6 +2,7 @@
 #include <maestro/search/search_graph.h>
 #include <maestro/game/game_gomoku.h>
 #include <maestro/evaluator/eval_gomoku_simplistic.h>
+#include <maestro/evaluator/eval_gomoku_nn.h>
 #include <maestro/play/match.h>
 #include <maestro/util/common.h>
 
@@ -9,7 +10,8 @@ using namespace Maestro;
 using namespace std;
 
 static void fast_match() {
-    auto eval = make_shared<SimplisticGomokuEvaluator>();
+    // auto eval = make_shared<SimplisticGomokuEvaluator>();
+    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.so", "../../../nn/nn.json", "../../../nn/nn.params");
     Gomoku g;
 
     using Config = MonteCarloGraphSearch<Gomoku>::Config;
@@ -44,7 +46,8 @@ static void fast_match() {
 }
 
 static void slow_round() {
-    auto eval = make_shared<SimplisticGomokuEvaluator>();
+    // auto eval = make_shared<SimplisticGomokuEvaluator>();
+    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.so", "../../../nn/nn.json", "../../../nn/nn.params");
 
     Gomoku g;
     using Config = MonteCarloGraphSearch<Gomoku>::Config;
@@ -81,5 +84,18 @@ static void slow_round() {
 int main() {
     // fast_match();
     slow_round();
+    /*
+    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/nn.so", "../../../nn/nn.json", "../../../nn/nn.params");
+    Gomoku g;
+    g.white.set(7, 6, true);
+    g.white.set(7, 7, true);
+    g.white.set(7, 8, true);
+    auto r = eval->evaluate(g);
+    for (auto pr : r.p) {
+        if (pr.p > 1e-5) {
+            printf("(%d, %d) = %f\n", pr.move.row, pr.move.col, pr.p);
+        }
+    }
+    */
     return 0;
 }

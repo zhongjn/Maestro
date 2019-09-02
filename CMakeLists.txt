@@ -2,10 +2,13 @@ cmake_minimum_required (VERSION 3.10)
 
 project(Maestro)
 
+set(LIBTORCH_DIR "D:/Program Files/libtorch")
 include_directories(include)
 include_directories(thirdparty/tvm/include)
 include_directories(thirdparty/tvm/3rdparty/dlpack/include)
 include_directories(thirdparty/tvm/3rdparty/dmlc-core/include)
+include_directories(${LIBTORCH_DIR}/include/torch/csrc/api/include)
+include_directories(${LIBTORCH_DIR}/include)
 
 add_subdirectory(thirdparty/tvm)
 
@@ -53,6 +56,8 @@ add_executable (TestEntry ${src_common} ${src_test})
 foreach(tg ${targets})
     set_property(TARGET ${tg} PROPERTY CXX_STANDARD 17)
     target_link_libraries(${tg} tvm_runtime)
+    target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/torch.lib)
+    target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/c10.lib)
     foreach(file ${copy_files})
 	    add_custom_command(
 		    TARGET ${tg} POST_BUILD
