@@ -7,8 +7,9 @@ namespace Maestro {
     class Round {
         TGame _game;
         shared_ptr<IPlayer<TGame>> _pa, _pb;
+        bool _both_think;
     public:
-        Round(TGame game, shared_ptr<IPlayer<TGame>> pa, shared_ptr<IPlayer<TGame>> pb) : _game(game), _pa(std::move(pa)), _pb(std::move(pb)) {
+        Round(TGame game, shared_ptr<IPlayer<TGame>> pa, shared_ptr<IPlayer<TGame>> pb, bool both_think = false) : _game(game), _pa(std::move(pa)), _pb(std::move(pb)), _both_think(both_think) {
 
         }
 
@@ -22,11 +23,11 @@ namespace Maestro {
             Move<Gomoku> m;
             if (c == Color::A) {
                 m = _pa->get_move(_game);
-                _pb->get_move(_game);
+                if (_both_think) _pb->get_move(_game);
             }
             else if (c == Color::B) {
                 m = _pb->get_move(_game);
-                _pa->get_move(_game);
+                if (_both_think) _pa->get_move(_game);
             }
             else {
                 throw runtime_error("unexpected color none");

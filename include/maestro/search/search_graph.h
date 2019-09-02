@@ -228,10 +228,10 @@ namespace Maestro {
     template<typename TGame>
     inline float MonteCarloGraphSearch<TGame>::action_ucb(State* parent, Action* action, int ts_virtual_loss) {
 
-        float u = 1;
+        float u = 0;
         if (action->child_state.initialized()) {
             State* child = action->child_state.value().get();
-            u += parent->convert_v(child);
+            if (action->visit > 0) u += parent->convert_v(child);
             u -= child->virtual_loss_cnt(ts_virtual_loss) * _config.virtual_loss / max(1, child->ns);
         }
         u += _config.puct * (action->p + action->p_noise_delta) * sqrtf(parent->ns) / (1 + action->visit);
@@ -382,6 +382,7 @@ namespace Maestro {
         int ts_last_batch = 0;
 
         for (int i_sim = 1; i_sim <= k; i_sim++) {
+            //printf("sim #%d begin\n", i_sim);
             bool evaluating_node_visited = false;
 
             global_stat.sim_total++;
@@ -452,15 +453,15 @@ namespace Maestro {
 
                 vector<shared_ptr<Action>>& actions = current->child_actions.value();
 
-                vector<float> ac_ucb_temp;
-                ac_ucb_temp.reserve(actions.size());
+                vector<float> ac_p_temp;
+                ac_p_temp.reserve(actions.size());
                 Action* action = nullptr;
                 int max_idx = -1;
                 float max_ucb = -100000;
                 int idx = 0;
                 for (auto& ac : actions) {
                     float ucb = action_ucb(current, ac.get(), ts_last_batch);
-                    ac_ucb_temp.push_back(ucb);
+                    ac_p_temp.push_back(ac->p + ac->p_noise_delta);
                     if (ucb >= max_ucb) {
                         max_ucb = ucb;
                         max_idx = idx;
@@ -469,7 +470,7 @@ namespace Maestro {
                     idx++;
                 }
 
-                ac_ucb_temp[max_idx] += 1000; // 重要！保证选中的action被排序到最前
+                ac_p_temp[max_idx] += 1000; // 重要！保证选中的action被排序到最前
 
                 if (!action->child_state.initialized() && action->child_state.value().get()->ns == 0) {
                     // 生成前k个未初始化的子节点
@@ -481,7 +482,7 @@ namespace Maestro {
                     }
 
                     // TODO: 可以用堆排优化
-                    sort(ac_no.begin(), ac_no.end(), [&ac_ucb_temp](int no1, int no2) { return ac_ucb_temp[no1] > ac_ucb_temp[no2]; });
+                    stable_sort(ac_no.begin(), ac_no.end(), [&ac_p_temp](int no1, int no2) { return ac_p_temp[no1] > ac_p_temp[no2]; });
 
                     int target_cnt = 0;
                     if (_config.enable_speculative_evaluation) {
@@ -494,13 +495,15 @@ namespace Maestro {
                                 }
                             }
                         }
-                        target_cnt = clamp(t * 1, 1, 20000); // 启发函数
+
+                        target_cnt = clamp(int(t * 1), 0, 20000); // 启发函数
                     }
 
                     // tricky
                     // 即使target_cnt=0（不启用投机），下面这个循环也会被至少执行一次
                     // 这样就可以确保不启用投机时的正确性
                     int cur_cnt = 0;
+                    int dd = 0;
                     for (int no : ac_no) {
                         State* cs = actions[no]->child_state.value().get();
                         if (cs->ns == 0) {
@@ -509,11 +512,11 @@ namespace Maestro {
                                 cs->stop_selection = true;
                                 cs->evaluating = true;
                                 eval_batch.push_back(cs);
+                                dd++;
                             }
                         }
                         if (cur_cnt >= target_cnt) break;
                     }
-
                     cur_leaf_batch_count++;
                 }
 
@@ -532,18 +535,10 @@ namespace Maestro {
             State* leaf = _sim_stack.back();
             if (leaf->stop_selection) global_stat.node_evaluated_used++;
             leaf->stop_selection = false;
-            leaf->dv(_timeline.time()) += (backup_v - leaf->v) / leaf->ns;
 
-            // 纠正路径上的v（由ns+1引起）
-            for (int i = 0; i < _sim_stack.size() - 1; i++) {
-                State* cur = _sim_stack[i];
-                State* next = _sim_stack[i + 1];
-                cur->dv(_timeline.time()) += (cur->convert_v(next) - cur->v) / cur->ns;
-            }
-
-            vector<State*> ls;
-            ls.push_back(leaf);
-            backup_dv(ls);
+            leaf->dv(_timeline.time()) = (backup_v - leaf->v) / leaf->ns;
+            unordered_set<State*> ls;
+            ls.insert(leaf);
 
             if (evaluating_node_visited || cur_leaf_batch_count == _config.leaf_batch_count || i_sim == k) {
                 if (eval_batch.size() > 0) {
@@ -553,7 +548,7 @@ namespace Maestro {
                     for (State* s : eval_batch) {
                         games.push_back(&s->game);
                     }
-                    printf("%d\n", eval_batch.size());
+
                     vector<Evaluation<TGame>> evals = _evaluator->evaluate(games);
                     assert(evals.size() == eval_batch.size());
                     for (int i = 0; i < evals.size(); i++) {
@@ -562,15 +557,28 @@ namespace Maestro {
                         s->evaluating = false;
                         s->eval = make_unique<Evaluation<TGame>>(std::move(evals[i]));
                         assert(s->v == 0.0f);
-                        s->dv(_timeline.time(Timeline::backup_eval)) = s->eval->v;
+                        s->dv(_timeline.time()) = s->eval->v;
+                        ls.insert(s);
                     }
-
-                    backup_dv(eval_batch, Timeline::backup_eval);
                 }
                 eval_batch.clear();
                 cur_leaf_batch_count = 0;
                 ts_last_batch = _timeline.time();
             }
+
+
+            // 纠正路径上的v（由ns+1引起）
+            for (int i = 0; i < _sim_stack.size() - 1; i++) {
+                State* cur = _sim_stack[i];
+                State* next = _sim_stack[i + 1];
+                cur->dv(_timeline.time()) += (cur->convert_v(next) - cur->v) / cur->ns;
+            }
+
+
+            vector<State*> lsv;
+            for (auto l : ls) lsv.push_back(l);
+            backup_dv(lsv);
+
         }
 
         global_stat.tt_load_factor = _transposition.load_factor();

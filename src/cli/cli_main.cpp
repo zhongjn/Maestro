@@ -54,21 +54,21 @@ static void slow_round() {
 
 
     Config c1 = Config();
-    c1.leaf_batch_count = 32;
-    c1.enable_speculative_evaluation = false;
+    c1.leaf_batch_count = 8;
+    c1.enable_speculative_evaluation = true;
 
     Config c2 = Config();
-    c2.leaf_batch_count = 32;
+    c2.leaf_batch_count = 8;
     c2.enable_speculative_evaluation = false;
 
 
     auto p1 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c1);
-    auto ps1 =make_shared<MonteCarloAIPlayer<Gomoku>>(p1, 2000);
+    auto ps1 = make_shared<MonteCarloAIPlayer<Gomoku>>(p1, 2000);
 
     auto p2 = make_shared<MonteCarloGraphSearch<Gomoku>>(eval, g, c2);
     auto ps2 = make_shared<MonteCarloAIPlayer<Gomoku>>(p2, 2000);
 
-    Round<Gomoku> round(g, move(ps1), move(ps2));
+    Round<Gomoku> round(g, move(ps1), move(ps2), true);
 
     while (true) {
         puts(round.game().to_string().c_str());

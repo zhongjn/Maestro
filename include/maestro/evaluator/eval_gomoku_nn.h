@@ -61,14 +61,15 @@ namespace Maestro {
                 }
             }
             inputs.push_back(in_data.to(USE_GPU ? torch::kCUDA : torch::kCPU));
-
             // Execute the model and turn its output into a tensor.
             torch::jit::Stack output = _module.forward(inputs).toTuple()->elements();
 
             // get output
-            float* pdata = output[0].toTensor().to(torch::kCPU).data<float>();
-            float* vdata = output[1].toTensor().to(torch::kCPU).data<float>();
+            auto tp = output[0].toTensor().to(torch::kCPU), tv = output[1].toTensor().to(torch::kCPU);
+            float* pdata = tp.data<float>();
+            float* vdata = tv.data<float>();
             vector<Evaluation<Gomoku>> ret;
+           
             for (int i = 0; i < games.size(); ++i) {
                 vector<Move<Gomoku>> ms = games[i]->get_all_legal_moves();
                 Evaluation<Gomoku> e;
