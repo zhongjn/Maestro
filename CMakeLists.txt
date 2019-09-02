@@ -49,9 +49,10 @@ add_executable (CLI ${src_common} ${src_cli})
 add_executable (TestEntry ${src_common} ${src_test})
 
 foreach(tg ${targets})
-    set_property(TARGET ${tg} PROPERTY CXX_STANDARD 17)
     target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/torch.lib)
     target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/c10.lib)
+
+    set_property(TARGET ${tg} PROPERTY CXX_STANDARD 17)
 
     foreach(file ${copy_files})
 	    add_custom_command(
