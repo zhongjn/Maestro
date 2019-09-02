@@ -8,6 +8,7 @@
 
 namespace Maestro {
     class NNGomokuEvaluator final : public IEvaluator<Gomoku> {
+        const bool USE_GPU = true;
     public:
         NNGomokuEvaluator(std::string lib_path)
         {
@@ -21,7 +22,7 @@ namespace Maestro {
             
             try {
                 _module = torch::jit::load(lib_path.c_str());
-                _module.to(torch::kCUDA);
+                _module.to(USE_GPU ? torch::kCUDA : torch::kCPU);
             } catch (c10::Error& e) {
                 std::string s(e.what());
                 printf("ERROR: %s\n", s.c_str());
@@ -59,7 +60,7 @@ namespace Maestro {
                     }
                 }
             }
-            inputs.push_back(in_data.to(torch::kCUDA));
+            inputs.push_back(in_data.to(USE_GPU ? torch::kCUDA : torch::kCPU));
 
             // Execute the model and turn its output into a tensor.
             torch::jit::Stack output = _module.forward(inputs).toTuple()->elements();

@@ -26,7 +26,9 @@ namespace Maestro {
             int node_evaluated_total = 0, node_evaluated_used = 0;
             int eval_batch_count = 0;
             float tt_load_factor = 0;
+            float v_a = 0;
             void print() const {
+                printf("game: v_a=%f\n", v_a);
                 printf("sims: total=%d, game_end=%d, transposed=%d\n", sim_total, sim_game_end, sim_use_transposition);
                 printf("eval: total=%d, used=%d, batch=%d\n", node_evaluated_total, node_evaluated_used, eval_batch_count);
                 printf("misc: tt_load_factor=%f, visit_evaluating=%d\n", tt_load_factor, visit_evaluating);
@@ -34,7 +36,7 @@ namespace Maestro {
         } global_stat = GlobalStat();
 
         struct Config {
-            bool same_response = false; // 去除对局随机性
+            bool same_response = true; // 去除对局随机性
             bool enable_dag = true;
             bool enable_speculative_evaluation = true;
             bool dirichlet_noise = false;
@@ -192,6 +194,9 @@ namespace Maestro {
                 static int seed;
                 seed += int(time(0));
                 this->_rnd_eng.seed(seed);
+            }
+            else {
+                this->_rnd_eng.seed(10);
             }
         }
 
@@ -548,6 +553,7 @@ namespace Maestro {
                     for (State* s : eval_batch) {
                         games.push_back(&s->game);
                     }
+                    printf("%d\n", eval_batch.size());
                     vector<Evaluation<TGame>> evals = _evaluator->evaluate(games);
                     assert(evals.size() == eval_batch.size());
                     for (int i = 0; i < evals.size(); i++) {
@@ -568,6 +574,7 @@ namespace Maestro {
         }
 
         global_stat.tt_load_factor = _transposition.load_factor();
+        global_stat.v_a = get_value(Color::A);
     }
 
     template<typename TGame>

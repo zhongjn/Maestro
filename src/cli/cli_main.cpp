@@ -55,7 +55,7 @@ static void slow_round() {
 
     Config c1 = Config();
     c1.leaf_batch_count = 32;
-    c1.enable_speculative_evaluation = true;
+    c1.enable_speculative_evaluation = false;
 
     Config c2 = Config();
     c2.leaf_batch_count = 32;

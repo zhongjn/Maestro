@@ -1,1 +1,1 @@
-#include <maestro/evaluator/eval_gomoku_simplistic.h>
+#include <maestro/evaluator/eval_gomoku_nn.h>
