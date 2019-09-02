@@ -1,7 +1,7 @@
 #include <iostream>
 #include "../search/search_graph.h"
 #include "../game/game_gomoku.h"
-#include "../evaluator/eval_gomoku_simplistic.h"
+#include "../evaluator/eval_gomoku_nn.h"
 #include "../play/match.h"
 #include "../util/common.h"
 
