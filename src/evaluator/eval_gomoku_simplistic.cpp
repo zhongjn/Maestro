@@ -1,4 +1,4 @@
-#include <maestro/evaluator/eval_gomoku_simplistic.h>
+#include "../evaluator/eval_gomoku_simplistic.h"
 
 using namespace Maestro;
 

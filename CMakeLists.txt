@@ -36,6 +36,10 @@ set(src_test
     src/test/03_expirable
 )
 
+set(copy_files
+    
+)
+
 set(targets
     CLI
     TestEntry
@@ -48,6 +52,14 @@ foreach(tg ${targets})
     set_property(TARGET ${tg} PROPERTY CXX_STANDARD 17)
     target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/torch.lib)
     target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/c10.lib)
+
+    foreach(file ${copy_files})
+	    add_custom_command(
+		    TARGET ${tg} POST_BUILD
+		    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				    ${file}
+				    ${CMAKE_BINARY_DIR})
+    endforeach()
 endforeach()
 
 include(CheckCXXCompilerFlag)

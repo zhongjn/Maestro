@@ -1,4 +1,4 @@
-#include <maestro/search/search_graph.h>
+#include "../search/search_graph.h"
 
 namespace Maestro {
 

@@ -1,5 +1,5 @@
 #include "test.h"
-#include <maestro/util/expirable.h>
+#include "../util/expirable.h"
 
 using namespace Maestro;
 

@@ -1,5 +1,5 @@
 #include "test.h"
-#include <maestro/util/lazy.h>
+#include "../util/lazy.h"
 
 using namespace Maestro;
 
