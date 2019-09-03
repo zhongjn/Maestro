@@ -143,7 +143,7 @@ string Maestro::Gomoku::to_string() const {
             line2[row_size - 1] = ']';
         }
 
-        out << line2 << " " << i + 1 << endl;
+        out << line2 << " " << 15 - i << endl;
         out << line << endl;
     }
 

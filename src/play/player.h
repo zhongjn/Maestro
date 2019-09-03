@@ -47,6 +47,7 @@ namespace Maestro {
                 char move_cc;
                 int move_r;
                 cin >> move_cc >> move_r;
+                move_r = 15 - move_r;
                 int move_c = move_cc - 'A';
                 assert(move_c >= 0 && move_c < BOARD_SIZE);
                 Move<Gomoku> m{ move_r, move_c };
