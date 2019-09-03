@@ -2,6 +2,7 @@
 #include <vector>
 #include <cassert>
 #include <string>
+#include <random>
 
 namespace Maestro {
     using namespace std;
@@ -73,11 +74,11 @@ namespace Maestro {
     public:
         // 注意：
         // 评估出来的v，是站在game的当前方的视角看的（即将落子的那一方）
-        virtual Evaluation<TGame> evaluate(const TGame& game) = 0;
-        virtual vector<Evaluation<TGame>> evaluate(const vector<TGame*>& games) {
+        virtual Evaluation<TGame> evaluate(const TGame& game, minstd_rand& rand_eng) = 0;
+        virtual vector<Evaluation<TGame>> evaluate(const vector<TGame*>& games, minstd_rand& rand_eng) {
             vector<Evaluation<TGame>> evals;
             for (auto* g : games) {
-                evals.push_back(evaluate(*g));
+                evals.push_back(evaluate(*g, rand_eng));
             }
             return evals;
         }

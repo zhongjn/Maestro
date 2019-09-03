@@ -5,7 +5,7 @@
 namespace Maestro {
     class SimplisticGomokuEvaluator final : public IEvaluator<Gomoku> {
     public:
-        Evaluation<Gomoku> evaluate(const Gomoku& game);
+        Evaluation<Gomoku> evaluate(const Gomoku& game, minstd_rand& rand_eng);
     private:
         void set_check_interval(int d, int& start, int& end);
         int check_dir(const Gomoku::HalfBoard& hb, int dr, int dc);

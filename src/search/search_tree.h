@@ -111,7 +111,7 @@ namespace Maestro {
 			m_kucb = kucb;
 			m_evaluator = evaluator;
             
-            m_root->expand(m_evaluator->evaluate(m_root_game));
+            m_root->expand(m_evaluator->evaluate(m_root_game, _rnd_eng));
             root_expand2();
 		}
 
@@ -121,7 +121,7 @@ namespace Maestro {
 				MCTSNode<TGame>* pcur = m_root;
 				while (!pcur->m_game->get_status().end) {
 					if (!pcur->expanded()) {
-						pcur->expand(m_evaluator->evaluate(*pcur->m_game));
+						pcur->expand(m_evaluator->evaluate(*pcur->m_game, _rnd_eng));
 					}
                     if (pcur == m_root) {
                         pcur = pcur->select_best_with_diri(m_kucb, m_noise);

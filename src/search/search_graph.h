@@ -392,7 +392,7 @@ namespace Maestro {
             _root->ns++;
             // 根节点需要特殊处理
             if (!_root->evaluated) {
-                _root->eval = make_unique<Evaluation<TGame>>(_evaluator->evaluate(_root->game));
+                _root->eval = make_unique<Evaluation<TGame>>(_evaluator->evaluate(_root->game, _rnd_eng));
                 _root->evaluated = true;
                 _root->v = _root->eval->v;
                 continue;
@@ -549,7 +549,7 @@ namespace Maestro {
                         games.push_back(&s->game);
                     }
 
-                    vector<Evaluation<TGame>> evals = _evaluator->evaluate(games);
+                    vector<Evaluation<TGame>> evals = _evaluator->evaluate(games, _rnd_eng);
                     assert(evals.size() == eval_batch.size());
                     for (int i = 0; i < evals.size(); i++) {
                         State* s = eval_batch[i];
