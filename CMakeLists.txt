@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.10)
 
 project(Maestro)
 
-set(LIBTORCH_DIR "K:/libtorch-win-shared-with-deps-1.2.0/libtorch")
+set(LIBTORCH_DIR "D:/Program Files/libtorch")
 include_directories(${LIBTORCH_DIR}/include/torch/csrc/api/include)
 include_directories(${LIBTORCH_DIR}/include)
 include_directories(include)

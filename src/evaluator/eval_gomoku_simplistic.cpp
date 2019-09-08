@@ -2,7 +2,7 @@
 
 using namespace Maestro;
 
-Evaluation<Gomoku> Maestro::SimplisticGomokuEvaluator::evaluate(const Gomoku& game) {
+Evaluation<Gomoku> Maestro::SimplisticGomokuEvaluator::evaluate(const Gomoku& game, minstd_rand& rand_eng) {
     minstd_rand rnd_eng;
     rnd_eng.seed(game.get_hash());
     uniform_real_distribution<float> dist(0, 1E-3);
