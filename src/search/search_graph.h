@@ -229,12 +229,14 @@ namespace Maestro {
     inline float MonteCarloGraphSearch<TGame>::action_ucb(State* parent, Action* action, int ts_virtual_loss) {
 
         float u = 0;
+        int child_visit = 0;
         if (action->child_state.initialized()) {
             State* child = action->child_state.value().get();
             if (action->visit > 0) u += parent->convert_v(child);
             u -= child->virtual_loss_cnt(ts_virtual_loss) * _config.virtual_loss / max(1, child->ns);
+            child_visit = child->ns;
         }
-        u += _config.puct * (action->p + action->p_noise_delta) * sqrtf(parent->ns) / (1 + action->visit);
+        u += _config.puct * (action->p + action->p_noise_delta) * sqrtf(parent->ns) / (1 + child_visit);
         return u;
     }
 
