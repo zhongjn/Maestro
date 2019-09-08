@@ -25,7 +25,7 @@ namespace Maestro {
             _mstat.total = n_rounds;
         }
 
-        bool step() {
+        bool step(bool rand_first_step = false, bool disp = true) {
             if (_mstat.current > _mstat.total) return false;
             _p1 = _p1_creator();
             _p2 = _p2_creator();
@@ -35,8 +35,13 @@ namespace Maestro {
             if (swap_side) swap(pa, pb);
 
             auto r = Round<TGame>(TGame(), move(pa), move(pb));
+            if (rand_first_step) {
+                r.rand_step();
+            }
             r.step_to_end();
-            puts(r.game().to_string().c_str());
+            if (disp) {
+                puts(r.game().to_string().c_str());
+            }
             Color winner = r.game().get_status().winner;
             int a_win = 0, b_win = 0, draw = 0;
             if (winner == Color::None) {
@@ -53,13 +58,18 @@ namespace Maestro {
             _mstat.draw += draw;
             _mstat.p1_win += !swap_side ? a_win : b_win;
             _mstat.p2_win += !swap_side ? b_win : a_win;
-            printf("p1=%d, p2=%d, draw=%d\n", _mstat.p1_win, _mstat.p2_win, _mstat.draw);
+            if (disp) {
+                printf("p1=%d, p2=%d, draw=%d\n", _mstat.p1_win, _mstat.p2_win, _mstat.draw);
+            }
             return true;
         }
 
-        void step_to_end() {
-            while (step()) {}
-            printf("match end! p1=%d, p2=%d, draw=%d\n", _mstat.p1_win, _mstat.p2_win, _mstat.draw);
+        void step_to_end(bool rand_first_step = false, bool disp = true) {
+            while (_mstat.current <= _mstat.total) {
+                printf("\rround (%d/%d)", _mstat.current, _mstat.total);
+                step(rand_first_step, disp);
+            }
+            printf("\nmatch end! p1=%d, p2=%d, draw=%d\n", _mstat.p1_win, _mstat.p2_win, _mstat.draw);
         }
 
         const MatchStat& stat() {

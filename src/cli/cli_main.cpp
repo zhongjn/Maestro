@@ -107,6 +107,11 @@ static void human_play() {
     }
 }
 
+static void exp3()
+{
+
+}
+
 int main() {
     fast_match();
     //human_play();

@@ -38,6 +38,17 @@ namespace Maestro {
             return true;
         }
 
+        void rand_step()
+        {
+            Color c = _game.get_color();
+            Move<Gomoku> m;
+            m.row = rand() % BOARD_SIZE;
+            m.col = rand() % BOARD_SIZE;
+            _game.move(m);
+            _pa->move(m);
+            _pb->move(m);
+        }
+
         void step_to_end() {
             while (step()) {}
         }
