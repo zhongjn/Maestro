@@ -15,10 +15,10 @@ int main(int argc, char** argv)
     using Config = MonteCarloGraphSearch<Gomoku>::Config;
 
     Config c1 = Config();
-    c1.leaf_batch_count = 16;
-    c1.enable_dag = true;
+    c1.leaf_batch_count = 8;
+    c1.enable_dag = false;
     Config c2 = Config();
-    c2.leaf_batch_count = 16;
+    c2.leaf_batch_count = 64;
     c2.enable_dag = false;
 
     shared_ptr<MonteCarloGraphSearch<Gomoku>> ps1, ps2;

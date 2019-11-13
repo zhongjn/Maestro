@@ -51,6 +51,7 @@ add_executable (CLI ${src_common} ${src_cli})
 add_executable (TestEntry ${src_common} ${src_test})
 add_executable (Exp2 ${src_common} src/test/exp2)
 add_executable (Exp3 ${src_common} src/test/exp3)
+add_executable (Exp4 ${src_common} src/test/exp4)
 
 foreach(tg ${targets})
     target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/torch.lib)
