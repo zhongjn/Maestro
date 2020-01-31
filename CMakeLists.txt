@@ -3,9 +3,21 @@ cmake_minimum_required (VERSION 3.10)
 project(Maestro)
 
 set(LIBTORCH_DIR "D:/Program Files/libtorch")
+set(TORCH_LIBRARIES ${LIBTORCH_DIR}/lib)
+set(CMAKE_PREFIX_PATH ${LIBTORCH_DIR})
+
+find_package(Torch REQUIRED)
+
+if(NOT Torch_FOUND)
+    message(FATAL_ERROR "Pytorch Not Found!")
+endif(NOT Torch_FOUND)
+
+message(STATUS "Pytorch status:")
+message(STATUS "    libraries: ${TORCH_LIBRARIES}")
+
+include_directories(include)
 include_directories(${LIBTORCH_DIR}/include/torch/csrc/api/include)
 include_directories(${LIBTORCH_DIR}/include)
-include_directories(include)
 
 set(src_common
     src/evaluator/eval_gomoku_simplistic
@@ -45,6 +57,7 @@ set(targets
     TestEntry
     Exp2
     Exp3
+    Exp4
 )
 
 add_executable (CLI ${src_common} ${src_cli})
@@ -54,8 +67,7 @@ add_executable (Exp3 ${src_common} src/test/exp3)
 add_executable (Exp4 ${src_common} src/test/exp4)
 
 foreach(tg ${targets})
-    target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/torch.lib)
-    target_link_libraries(${tg} ${LIBTORCH_DIR}/lib/c10.lib)
+    target_link_libraries(${tg} ${TORCH_LIBRARIES})
 
     set_property(TARGET ${tg} PROPERTY CXX_STANDARD 17)
 

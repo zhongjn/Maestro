@@ -9,7 +9,7 @@ using namespace Maestro;
 
 int main(int argc, char** argv)
 {
-    auto eval = make_shared<NNGomokuEvaluator>("../nn/gnn.pt");
+    auto eval = make_shared<NNGomokuEvaluator>("../../../nn/gnn.pt");
 
     Gomoku g;
     using Config = MonteCarloGraphSearch<Gomoku>::Config;
